@@ -15,6 +15,7 @@ import ForgetPassword from "./pages/Auth/ForgetPassword";
 import ResetPassword from './pages/Auth/ResetPassword';
 import VerifyEmail from './pages/Auth/VerifyEmail';
 import TwoFactorAuth from './pages/Auth/TwoFactorAuth';
+import AuthLayout from "./pages/Auth/AuthLayout";
 
 const router = createBrowserRouter([
     {
@@ -33,29 +34,18 @@ const router = createBrowserRouter([
         ],
     },
     {
-        path: "/login",
-        element: <Login />,
-    },
-    {
-        path: "/register",
-        element: <Register />,
-    },
-    {
-        path: "/forgot-password",
-        element: <ForgetPassword />,
-    },
-    {
-        path: "/reset-password/:token",
-        element: <ResetPassword />,
-    },
-    {
-        path: "/verify-email/:token",
-        element: <VerifyEmail />,
-    },
-    {
-        path: "/2fa",
-        element: <TwoFactorAuth />,
-    },
+        path: "/auth",
+        element: <AuthLayout />,
+        children: [
+            { index: true, element: <Login /> },
+            { path: "login", element: <Login /> },
+            { path: "register", element: <Register /> },
+            { path: "forgot-password", element: <ForgetPassword /> },
+            { path: "reset-password/:token", element: <ResetPassword /> },
+            { path: "verify-email/:token", element: <VerifyEmail /> },
+            { path: "2fa", element: <TwoFactorAuth /> },
+        ],
+    }
 ]);
 
 const AppRouter = () => <RouterProvider router={router} />;
