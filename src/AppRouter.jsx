@@ -16,6 +16,8 @@ import ResetPassword from './pages/Auth/ResetPassword';
 import VerifyEmail from './pages/Auth/VerifyEmail';
 import TwoFactorAuth from './pages/Auth/TwoFactorAuth';
 import AuthLayout from "./pages/Auth/AuthLayout";
+import Profile from "./pages/Profile";
+import Chat from "./pages/Chat";
 
 const router = createBrowserRouter([
     {
@@ -31,6 +33,8 @@ const router = createBrowserRouter([
             { path: "checkout", element: <Checkout /> },
             { path: "categories", element: <Categories /> },
             { path: "countries", element: <Countries /> },
+            { path: "chat", element: <Chat/>},
+            { path: "profile", element: <Profile/> },
             { path: "*", element: <NotFound /> }
         ],
     },
