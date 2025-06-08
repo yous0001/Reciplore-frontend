@@ -1,23 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAuthStore } from '../../store/authStore'; 
 
 export default function TwoFactorAuth() {
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const inputRefs = useRef([]);
   const navigate = useNavigate();
-  const isLoading = false;
+
+  const { isLoading, verifyLogin } = useAuthStore();
 
   const handleChange = (index, value) => {
     const newCode = [...code];
 
-    if (value.length > 1) {
-      // This block should now be handled by onPaste
-      return;
-    }
+    if (value.length > 1) return;
 
     newCode[index] = value;
     setCode(newCode);
+
     if (value && index < 5) {
       inputRefs.current[index + 1].focus();
     } else if (!value && index > 0) {
@@ -33,12 +33,11 @@ export default function TwoFactorAuth() {
 
   const handlePaste = (e) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6); // Get only digits, max 6
-    const newCode = pastedData.split('').slice(0, 6); // Ensure exactly 6 digits or less
-    while (newCode.length < 6) newCode.push(''); // Pad with empty strings if less than 6
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    const newCode = pastedData.split('').slice(0, 6);
+    while (newCode.length < 6) newCode.push('');
     setCode(newCode);
 
-    // Focus on the last filled input or the next empty one
     const lastFilledIndex = newCode.findLastIndex((digit) => digit !== '');
     const focusIndex = lastFilledIndex + 1 < 6 ? lastFilledIndex + 1 : 5;
     if (inputRefs.current[focusIndex]) {
@@ -46,23 +45,25 @@ export default function TwoFactorAuth() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const verificationCode = code.join(''); 
-    
+    const verificationCode = code.join('');
+
     if (!isLoading && !code.some((digit) => !digit)) {
-      console.log('Code submitted:', code.join(''));
-      // navigate('/next-page'); // Example navigation
+      try {
+        await verifyLogin(verificationCode, navigate); // ✅ Call Zustand action
+      } catch (err) {
+        console.error('Verification failed', err);
+      }
     }
   };
 
   useEffect(() => {
-    if(code.every((digit) => digit !== '')){
+    if (code.every((digit) => digit !== '')) {
       handleSubmit(new Event('submit'));
     }
   }, [code]);
 
-  
   return (
     <div className="max-w-md w-full bg-gray-800 bg-opacity-50 backdrop-filter backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden">
       <motion.div
@@ -99,7 +100,7 @@ export default function TwoFactorAuth() {
             disabled={isLoading || code.some((digit) => !digit)}
             className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:from-orange-600 hover:to-amber-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 disabled:opacity-50"
           >
-            {isLoading ? 'Verifying...' : 'Verify Email'}
+            {isLoading ? 'Verifying...' : 'Verify Login'}
           </motion.button>
         </form>
       </motion.div>
