@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { ShoppingCart, Heart, User, LogOut } from 'lucide-react';
 import { useAuthStore } from '../store/authStore'; // Adjust the path as needed
@@ -13,10 +13,18 @@ const navItems = [
 ];
 
 export default function Navbar() {
-    const { isAuthenticated, user, logout } = useAuthStore(); // Access auth state and logout
     const [isOpen, setIsOpen] = React.useState(false);
     const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+    const { isAuthenticated, user, restoreSession, isCheckingAuth, logout } = useAuthStore();
 
+    useEffect(() => {
+        restoreSession();
+    }, [restoreSession]);
+
+    if (isCheckingAuth) {
+        // Optional: show a loader or empty navbar while checking session
+        return null;
+    }
     const handleLogout = () => {
         logout();
         setIsProfileOpen(false); // Close profile dropdown on logout
