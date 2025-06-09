@@ -13,7 +13,6 @@ export default function Login() {
   // pull login function and loading state from authStore
   const login = useAuthStore(state => state.login);
   const isLoading = useAuthStore(state => state.isLoading);
-
   const handleLogin = async (e) => {
     e.preventDefault();
     await login(email, password, navigate);
