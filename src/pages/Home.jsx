@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import RecipeSearchBar from '../components/RecipeSearchBar';
+import HomeBanner from '../components/HomeBanner';
 
 const Home = () => {
   const [banner, setBanner] = useState(null);
@@ -37,26 +38,9 @@ const Home = () => {
   }
 
   return (
-    <div
-      className="h-screen w-full bg-cover bg-center bg-no-repeat mx-auto"
-      style={{
-        backgroundImage: `url(${banner.Images[0].secure_url})`,
-      }}
-    >
-      <div className="container mx-auto p-4 pt-6 md:p-6 lg:px-16 xl:px-20">
-        <div className="flex flex-col justify-start items-start">
-          <h1 className="text-3xl leading-tight font-bold text-dark">
-            You don't know how to make the dish you have in mind?
-          </h1>
-          <p className="text-lg leading-relaxed text-dark">
-            Feed your imagination and spark your creativity. From cravings to creations, let your ideas flourish and uncover the perfect recipe waiting to be discovered.
-          </p>
-          <div className="mt-4">
-            <RecipeSearchBar/>
-          </div>
-        </div>
-      </div>
-    </div>
+    <>
+      <HomeBanner/>
+    </>
   );
 };
 
