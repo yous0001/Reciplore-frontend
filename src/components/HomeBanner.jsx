@@ -63,12 +63,12 @@ export default function HomeBanner() {
 
     return (
         <div
-            className="h-screen w-11/12 bg-cover bg-center bg-no-repeat mx-auto rounded-2xl my-5 flex items-center"
+            className="h-screen w-47/48 bg-cover bg-center bg-no-repeat mx-auto rounded-2xl my-5 flex items-center"
             style={{
                 backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
             }}
         >
-            <div className="container p-4 pt-6 md:p-6 lg:px-16 xl:px-20 flex items-center w-5/6">
+            <div className="container p-4 pt-6 md:p-6 lg:px-16 xl:px-20 flex items-center w-3/5">
                 <div className="flex flex-col justify-center items-start space-y-5">
                     <motion.h1
                         className="text-4xl leading-tight font-bold text-black"
