@@ -344,4 +344,42 @@ export const useAuthStore = create((set) => ({
             throw error;
         }
     },
+
+        forgetPassword: async (email) => {
+        set({ isLoading: true, error: null });
+        try {
+            const res = await axios.post(`${API_URL}/auth/forget-password`, { email });
+            if (res.data.success) {
+                set({ isLoading: false });
+                toast.success(res.data.message || "Reset password link sent successfully");
+                return res.data.message;
+            } else {
+                throw new Error(res.data.message || "Failed to send reset email");
+            }
+        } catch (error) {
+            const errorMsg = error.response?.data?.message || "Failed to send reset email";
+            set({ isLoading: false, error: errorMsg });
+            toast.error(errorMsg);
+            throw error;
+        }
+    },
+
+    resetPassword: async (token, password, navigate) => {
+        set({ isLoading: true, error: null });
+        try {
+            const res = await axios.post(`${API_URL}/auth/reset-password/${token}`, {
+                password,
+            });
+            set({ isLoading: false });
+            toast.success(res.data.message || "Password reset successful");
+            navigate("/auth/login");
+            return res.data.message;
+        } catch (error) {
+            const errorMsg = error.response?.data?.message || "Failed to reset password";
+            set({ isLoading: false, error: errorMsg });
+            toast.error(errorMsg);
+            throw error;
+        }
+    },
+
 }));
