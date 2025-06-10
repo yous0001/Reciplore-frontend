@@ -1,61 +1,48 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import slugify from 'slugify';
 
 const RecipeCard = ({ recipe }) => {
-    const {
-        category,
-        name,
-        imageUrl,
-        rating,
-        tags,
-        isFavourite,
-        onToggleFavourite
-    } = recipe;
+    const navigate = useNavigate();
+    const rating = Math.round(recipe.Average_rating || 0);
+    const isFavourite = recipe.isFavourite || false; // Assume isFavourite exists; replace with actual logic if needed
+    recipe.slug = recipe.slug || slugify(recipe.name, {
+        replacement: "_",
+        lower: true,
+    });
+    console.log('Rendering RecipeCard:', recipe.slug);
 
     return (
-        <div className="relative w-64 bg-white rounded-lg shadow-lg overflow-hidden transform transition-all hover:scale-105">
-            {/* Recipe Image */}
-            <img
-                src={imageUrl || 'https://via.placeholder.com/256'}
-                alt={name}
-                className="w-full h-48 object-cover"
-            />
-
-            {/* Rating Badge */}
-            {rating && (
-                <div className="absolute top-2 left-2 bg-yellow-400 text-white px-2 py-1 rounded-full flex items-center gap-1">
-                    <span className="text-xs">★</span>
-                    <span className="text-xs font-bold">{rating}</span>
-                </div>
-            )}
-
-            {/* Favorite Button */}
-            <button
-                onClick={onToggleFavourite}
-                className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600"
-            >
-                <span className="text-xl">♥</span>
-            </button>
-
-            {/* Recipe Info */}
-            <div className="p-4">
-                {/* Category */}
-                <p className="text-red-500 text-sm mb-1">{category}</p>
-
-                {/* Name */}
-                <h3 className="text-lg font-semibold mb-2">{name}</h3>
-
-                {/* Tags */}
-                <div className="flex flex-wrap gap-2">
-                    {tags?.map((tag, index) => (
-                        <span
-                            key={index}
-                            className="text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded-full"
-                        >
-                            {tag}
-                        </span>
-                    ))}
-                </div>
+        <div
+            className="bg-white flex flex-col justify-between rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 relative w-full cursor-pointer"
+            onClick={() => navigate(`/recipe/${recipe.slug}`)}
+        >
+            <div className="absolute top-2 left-2 bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded-full">
+                {rating} ⭐
             </div>
+            <img
+                src={recipe.Images?.URLs?.[0]?.secure_url || 'https://via.placeholder.com/300x200'}
+                alt={recipe.name || 'Recipe Image'}
+                className="w-full h-48 object-cover"
+                onError={(e) => { e.target.src = 'https://via.placeholder.com/300x200'; }}
+            />
+            <div className="p-5">
+                <h3 className="text-xl font-bold text-gray-900 line-clamp-2">{recipe.name || 'Unnamed Recipe'}</h3>
+                <p className="text-sm text-gray-600 mt-2 line-clamp-2">{(recipe.description || '').substring(0, 50)}...</p>
+            </div>
+            <div className="p-5 flex justify-between items-end">
+                <span className="text-orange-400 font-semibold">{recipe.category?.name || 'N/A'}</span>
+                <span className="bg-gray-200 text-gray-700 text-sm font-medium px-3 py-1 rounded-full">
+                    {recipe.country?.name || 'N/A'}
+                </span>
+            </div>
+            <button
+                className="absolute top-2 right-2 text-4xl text-orange-500 transition-colors duration-200"
+                onMouseEnter={(e) => (e.target.textContent = '♥')}
+                onMouseLeave={(e) => (e.target.textContent = isFavourite ? '♥' : '♡')}
+            >
+                {isFavourite ? '♥' : '♡'}
+            </button>
         </div>
     );
 };

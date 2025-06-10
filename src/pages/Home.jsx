@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import RecipeSearchBar from '../components/RecipeSearchBar';
 import HomeBanner from '../components/HomeBanner';
+import HomeRecipeDisplay from '../components/HomeRecipeDisplay';
 
 const Home = () => {
   const [banner, setBanner] = useState(null);
@@ -40,6 +41,7 @@ const Home = () => {
   return (
     <>
       <HomeBanner/>
+      <HomeRecipeDisplay/>
     </>
   );
 };
