@@ -1,0 +1,36 @@
+.toggle-label {
+    transition: all 0.3s ease;
+}
+
+.toggle-label.active {
+    background-color: #f97316;
+    /* orange-500 */
+    color: white;
+    border: 2px solid #f97316;
+    /* Add border to selected label */
+}
+
+.toggle-label:not(.active) {
+    background-color: #fee2b3;
+    /* light orange */
+    color: #744210;
+    /* dark brown */
+}
+
+input[type="radio"] {
+    display: none;
+}
+
+input[type="text"] {
+    padding: 0.75rem;
+    border: 2px solid #fed7aa;
+    /* light orange border */
+    border-radius: 0.5rem;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+input[type="text"]:focus {
+    border-color: #f97316;
+    /* orange-500 on focus */
+}
