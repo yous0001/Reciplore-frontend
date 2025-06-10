@@ -29,7 +29,7 @@ const router = createBrowserRouter([
             { path: "recipes", element: <RecipeList /> },
             { path: "/recipe/:slug", element: <RecipeDetails /> },
             { path: "market", element: <Market /> },
-            { path: "ingredients/:id", element: <IngredientDetails /> },
+            { path: "ingredient/:slug", element: <IngredientDetails /> },
             { path: "checkout", element: <Checkout /> },
             { path: "categories", element: <Categories /> },
             { path: "countries", element: <Countries /> },

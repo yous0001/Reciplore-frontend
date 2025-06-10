@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import slugify from 'slugify';
 
 const RecipeDetails = () => {
     const { slug } = useParams();
@@ -19,7 +20,7 @@ const RecipeDetails = () => {
                 const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/recipe/get`, {
                     params: { slug },
                 });
-                console.log('API Response:', response.data);
+                console.log('API Response - recipe.ingredients:', response.data.recipe.ingredients);
                 setRecipe(response.data.recipe);
             } catch (err) {
                 console.log('API Error:', err.response?.status, err.response?.data);
@@ -77,7 +78,7 @@ const RecipeDetails = () => {
                         <h2 className="text-3xl font-bold text-gray-900 mb-6 border-b-2 border-orange-300 pb-3">Details</h2>
                         <div className="space-y-6">
                             <p className="text-gray-700 text-lg"><span className="font-semibold text-orange-600">Category:</span> {recipe.category.name}</p>
-                            <p className="text-gray-700 text-lg"><span className="font-semibold text-orange-600">Country:</span> 
+                            <p className="text-gray-700 text-lg"><span className="font-semibold text-orange-600">Country:</span>
                                 <span className="bg-orange-200 text-orange-800 text-base font-medium px-4 py-2 rounded-full ml-3 shadow-inner">
                                     {recipe.country.name}
                                 </span>
@@ -103,20 +104,33 @@ const RecipeDetails = () => {
                     <div className="lg:col-span-1 bg-white/90 rounded-xl shadow-2xl p-8 mt-10 backdrop-blur-sm">
                         <h2 className="text-3xl font-bold text-gray-900 mb-6 border-b-2 border-orange-300 pb-3">Ingredients</h2>
                         <div className="space-y-6">
-                            {recipe.ingredients.map((ing, index) => (
-                                <div key={ing._id} className="flex items-center space-x-4 p-3 hover:bg-orange-50 rounded-lg transition-all duration-300">
-                                    <img
-                                        src={ing.ingredient.image.secure_url}
-                                        alt={ing.ingredient.name}
-                                        className="w-16 h-16 object-cover rounded-full border-2 border-orange-200"
-                                        onError={(e) => { e.target.src = 'https://via.placeholder.com/64x64'; }}
-                                    />
-                                    <div>
-                                        <p className="text-gray-700 text-lg">{ing.amount} {ing.ingredient.name}</p>
-                                        <p className="text-gray-500 text-sm">(${ing.ingredient.appliedPrice.toFixed(2)})</p>
+                            {recipe.ingredients.map((ing, index) => {
+                                console.log('Ingredient in map:', ing); // Debug log
+                                return (
+                                    <div
+                                        key={ing._id}
+                                        className="flex items-center space-x-4 p-3 hover:bg-orange-50 rounded-lg transition-all duration-300 cursor-pointer"
+                                        onClick={() => {
+                                            console.log('Clicked ingredient:', ing.ingredient); // Debug log
+                                            navigate(`/ingredient/${ing.ingredient?.slug || slugify(ing.ingredient?.name, {
+                                                replacement: "_",
+                                                lower: true,
+                                            }) || 'unknown'}`);
+                                        }}
+                                    >
+                                        <img
+                                            src={ing.ingredient?.image?.secure_url || ing.image?.secure_url || 'https://via.placeholder.com/64x64'}
+                                            alt={ing.ingredient?.name || ing.name || 'Unknown Ingredient'}
+                                            className="w-16 h-16 object-cover rounded-full border-2 border-orange-200"
+                                            onError={(e) => { e.target.src = 'https://via.placeholder.com/64x64'; }}
+                                        />
+                                        <div>
+                                            <p className="text-gray-700 text-lg">{ing.amount} {ing.ingredient?.name || ing.name || 'Unknown'}</p>
+                                            <p className="text-gray-500 text-sm">(${ing.ingredient?.appliedPrice?.toFixed(2) || '0.00'})</p>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
