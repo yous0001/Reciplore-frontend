@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-
+import "./Chat.css";
 const Chat = () => {
   const [currentMode, setCurrentMode] = useState('ingredients');
   const [ingredients, setIngredients] = useState('');

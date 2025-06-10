@@ -99,8 +99,17 @@ const IngredientDetails = () => {
                         <h2 className="text-3xl font-bold text-gray-900 mb-6 border-b-2 border-orange-300 pb-3">Details</h2>
                         <div className="space-y-6">
                             <p className="text-gray-700 text-lg"><span className="font-semibold text-orange-600">Description:</span> {ingredient.description}</p>
-                            <p className="text-gray-700 text-lg"><span className="font-semibold text-orange-600">Base Price:</span> ${ingredient.basePrice.toFixed(2)}</p>
-                            <p className="text-gray-700 text-lg"><span className="font-semibold text-orange-600">Applied Price:</span> ${ingredient.appliedPrice.toFixed(2)}</p>
+                            <p className="text-gray-700 text-lg">
+                                <span className="font-semibold text-orange-600">Price:</span>
+                                {ingredient.basePrice !== ingredient.appliedPrice ? (
+                                    <>
+                                        <span className="line-through text-gray-500">${ingredient.basePrice?.toFixed(2) || '0.00'}</span>
+                                        <span className="ml-2 text-gray-700">${ingredient.appliedPrice?.toFixed(2) || '0.00'}</span>
+                                    </>
+                                ) : (
+                                    <span className="text-gray-700">${ingredient.appliedPrice?.toFixed(2) || '0.00'}</span>
+                                )}
+                            </p>
                             <p className="text-gray-700 text-lg"><span className="font-semibold text-orange-600">Stock:</span> {ingredient.stock}</p>
                             <p className="text-gray-700 text-lg"><span className="font-semibold text-orange-600">Created By:</span> {ingredient.createdBy.username}</p>
                             <p className="text-gray-700 text-lg"><span className="font-semibold text-orange-600">Created At:</span> {new Date(ingredient.createdAt).toLocaleDateString()}</p>
