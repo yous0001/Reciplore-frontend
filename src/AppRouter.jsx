@@ -19,6 +19,7 @@ import AuthLayout from "./pages/Auth/AuthLayout";
 import Profile from "./pages/Profile";
 import Chat from "./pages/Chat";
 import Cart from "./pages/Cart";
+import DietPlan from "./pages/DietPlan";
 
 const router = createBrowserRouter([
     {
@@ -37,6 +38,7 @@ const router = createBrowserRouter([
             { path: "chat", element: <Chat/>},
             { path: "cart", element: <Cart/> },
             { path: "profile", element: <Profile/> },
+            { path: "diet-plan", element: <DietPlan/> },
             { path: "*", element: <NotFound /> }
         ],
     },

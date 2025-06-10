@@ -10,6 +10,7 @@ const navItems = [
     { name: "Categories", to: "/categories" },
     { name: "Countries", to: "/countries" },
     { name: "Chat", to: "/chat" },
+    { name: "diet plan", to: "/diet-plan" },
 ];
 
 export default function Navbar() {
