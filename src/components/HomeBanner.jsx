@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import RecipeSearchBar from '../components/RecipeSearchBar'; // Adjust path if needed
 
 export default function HomeBanner() {
@@ -8,23 +9,28 @@ export default function HomeBanner() {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const navigate = useNavigate();
 
     const handleSearch = () => {
-        console.log('Searching for:', searchQuery);
-        // Implement search logic here
+        if (searchQuery.trim()) {
+            navigate(`/search-ai/${encodeURIComponent(searchQuery)}`);
+        }
     };
 
     useEffect(() => {
         const fetchBanner = async () => {
             try {
                 const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/banner/web_home`);
-                if (response.data.sucess) {
+                console.log('Banner API Response:', response.data); // Debug log
+                // Check for both 'success' and 'sucess' to handle typo
+                if (response.data.success || response.data.sucess) {
                     setBanner(response.data.banners);
                 } else {
-                    setError('Failed to load banner data');
+                    setError(`Failed to load banner data: ${response.data.message || 'Invalid response'}`);
                 }
             } catch (err) {
-                setError('Error fetching banner: ' + err.message);
+                setError(`Error fetching banner: ${err.message}`);
+                console.error('Axios Error:', err.response?.data, err.response?.status);
             } finally {
                 setLoading(false);
             }
@@ -59,7 +65,7 @@ export default function HomeBanner() {
         );
     }
 
-    const backgroundImage = banner?.Images?.[0]?.secure_url;
+    const backgroundImage = banner?.Images?.[0]?.secure_url || 'https://via.placeholder.com/1200x600';
 
     return (
         <div

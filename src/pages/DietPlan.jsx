@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { useAuthStore } from '../store/authStore'; // Adjust path
+import { FaRuler, FaWeight, FaBirthdayCake, FaPercentage, FaBullseye, FaUtensils, FaMars, FaVenus, FaRunning } from 'react-icons/fa';
 
 const DietPlan = () => {
     const [height, setHeight] = useState(175);
@@ -51,10 +52,10 @@ const DietPlan = () => {
         }
 
         const data = {
-            height:+height,
-            age:+age,
-            weight:+weight,
-            fatPercentage:+fatPercentage,
+            height: +height,
+            age: +age,
+            weight: +weight,
+            fatPercentage: +fatPercentage,
             goal: goal.toLowerCase(),
             preferences,
             gender: gender.toLowerCase(),
@@ -62,7 +63,7 @@ const DietPlan = () => {
         };
 
         try {
-            console.log(data)
+            console.log(data);
             await axios.post(`${import.meta.env.VITE_BACKEND_URL}/ai/diet-plan`, data, {
                 headers: { accessToken: `accessToken_${accessToken}` },
             });
@@ -102,117 +103,154 @@ const DietPlan = () => {
                             .input-focus:focus {
                                 animation: inputFocus 0.3s forwards;
                             }
+                            .input-container {
+                                position: relative;
+                            }
+                            .input-icon {
+                                position: absolute;
+                                top: 50%;
+                                left: 10px;
+                                transform: translateY(-50%);
+                                color: #FFA726;
+                            }
+                            .input-with-icon {
+                                padding-left: 36px;
+                            }
                         `}
                     </style>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-black mb-1">
                                 Height (cm)
-                                <input
-                                    type="number"
-                                    value={height}
-                                    onChange={(e) => setHeight(e.target.value)}
-                                    className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none"
-                                    min="100"
-                                    max="250"
-                                />
+                                <div className="input-container">
+                                    <FaRuler className="input-icon " />
+                                    <input
+                                        type="number"
+                                        value={height}
+                                        onChange={(e) => setHeight(e.target.value)}
+                                        className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none input-with-icon"
+                                        min="100"
+                                        max="250"
+                                    />
+                                </div>
                             </label>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-black mb-1">
                                 Weight (kg)
-                                <input
-                                    type="number"
-                                    value={weight}
-                                    onChange={(e) => setWeight(e.target.value)}
-                                    className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none"
-                                    min="30"
-                                    max="200"
-                                />
+                                <div className="input-container">
+                                    <FaWeight className="input-icon" />
+                                    <input
+                                        type="number"
+                                        value={weight}
+                                        onChange={(e) => setWeight(e.target.value)}
+                                        className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none input-with-icon"
+                                        min="30"
+                                        max="200"
+                                    />
+                                </div>
                             </label>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-black mb-1">
                                 Age
-                                <input
-                                    type="number"
-                                    value={age}
-                                    onChange={(e) => setAge(e.target.value)}
-                                    className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none"
-                                    min="19"
-                                    max="99"
-                                />
+                                <div className="input-container">
+                                    <FaBirthdayCake className="input-icon" />
+                                    <input
+                                        type="number"
+                                        value={age}
+                                        onChange={(e) => setAge(e.target.value)}
+                                        className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none input-with-icon"
+                                        min="19"
+                                        max="99"
+                                    />
+                                </div>
                             </label>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-black mb-1">
                                 Fat Percentage (%)
-                                <input
-                                    type="number"
-                                    value={fatPercentage}
-                                    onChange={(e) => setFatPercentage(e.target.value)}
-                                    className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none"
-                                    min="5"
-                                    max="50"
-                                />
+                                <div className="input-container">
+                                    <FaPercentage className="input-icon" />
+                                    <input
+                                        type="number"
+                                        value={fatPercentage}
+                                        onChange={(e) => setFatPercentage(e.target.value)}
+                                        className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none input-with-icon"
+                                        min="5"
+                                        max="50"
+                                    />
+                                </div>
                             </label>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-black mb-1">
                                 Goal
-                                <select
-                                    value={goal}
-                                    onChange={(e) => setGoal(e.target.value)}
-                                    className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none"
-                                >
-                                    <option value="muscle gain">Muscle Gain</option>
-                                    <option value="weight loss">Weight Loss</option>
-                                    <option value="maintenance">Maintenance</option>
-                                </select>
+                                <div className="input-container">
+                                    <FaBullseye className="input-icon" />
+                                    <select
+                                        value={goal}
+                                        onChange={(e) => setGoal(e.target.value)}
+                                        className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none input-with-icon"
+                                    >
+                                        <option value="muscle gain">Muscle Gain</option>
+                                        <option value="weight loss">Weight Loss</option>
+                                        <option value="maintenance">Maintenance</option>
+                                    </select>
+                                </div>
                             </label>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-black mb-1">
                                 Preferences
-                                <select
-                                    value={preferences}
-                                    onChange={(e) => setPreferences(e.target.value)}
-                                    className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none"
-                                >
-                                    <option value="high protein">High Protein</option>
-                                    <option value="low carb">Low Carb</option>
-                                    <option value="vegetarian">Vegetarian</option>
-                                    <option value="vegan">Vegan</option>
-                                </select>
+                                <div className="input-container">
+                                    <FaUtensils className="input-icon" />
+                                    <select
+                                        value={preferences}
+                                        onChange={(e) => setPreferences(e.target.value)}
+                                        className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none input-with-icon"
+                                    >
+                                        <option value="high protein">High Protein</option>
+                                        <option value="low carb">Low Carb</option>
+                                        <option value="vegetarian">Vegetarian</option>
+                                        <option value="vegan">Vegan</option>
+                                    </select>
+                                </div>
                             </label>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-black mb-1">
                                 Gender
-                                <select
-                                    value={gender}
-                                    onChange={(e) => setGender(e.target.value)}
-                                    className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none"
-                                >
-                                    <option value="male">Male</option>
-                                    <option value="female">Female</option>
-                                </select>
+                                <div className="input-container">
+                                    {gender.toLowerCase() === 'male' ? <FaMars className="input-icon" /> : <FaVenus className="input-icon" />}
+                                    <select
+                                        value={gender}
+                                        onChange={(e) => setGender(e.target.value)}
+                                        className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none input-with-icon"
+                                    >
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                    </select>
+                                </div>
                             </label>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-black mb-1">
                                 Activity Level
-                                <select
-                                    value={activityLevel}
-                                    onChange={(e) => setActivityLevel(e.target.value)}
-                                    className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none"
-                                >
-                                    <option value="Sedentary">Sedentary</option>
-                                    <option value="Lightly Active">Lightly Active</option>
-                                    <option value="Moderately Active">Moderately Active</option>
-                                    <option value="Very Active">Very Active</option>
-                                    <option value="Extremely Active">Extremely Active</option>
-                                </select>
+                                <div className="input-container">
+                                    <FaRunning className="input-icon" />
+                                    <select
+                                        value={activityLevel}
+                                        onChange={(e) => setActivityLevel(e.target.value)}
+                                        className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none input-with-icon"
+                                    >
+                                        <option value="Sedentary">Sedentary</option>
+                                        <option value="Lightly Active">Lightly Active</option>
+                                        <option value="Moderately Active">Moderately Active</option>
+                                        <option value="Very Active">Very Active</option>
+                                        <option value="Extremely Active">Extremely Active</option>
+                                    </select>
+                                </div>
                             </label>
                         </div>
                     </div>

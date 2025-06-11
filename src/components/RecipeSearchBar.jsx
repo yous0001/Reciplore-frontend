@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Utensils } from 'lucide-react';
+import { BrainCircuit, Search, Utensils } from 'lucide-react';
 import { FiSearch } from 'react-icons/fi';
 
 const RecipeSearchBar = ({ value, onChange, onSearch }) => {
@@ -16,10 +16,11 @@ const RecipeSearchBar = ({ value, onChange, onSearch }) => {
                     type="text"
                     value={value}
                     onChange={onChange}
-                    placeholder="Find what you want to cook today"
+                    placeholder="     search by ingredients with Ai"
                     className="w-full p-3 pl-10 pr-3 rounded-l-md border bg-white border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 text-gray-700"
+                    
                 />
-                <Utensils className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-500 w-5 h-5" />
+                <BrainCircuit className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-500 w-5 h-5" />
             </div>
             <button
                 type="submit"

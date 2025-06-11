@@ -20,6 +20,8 @@ import Profile from "./pages/Profile";
 import Chat from "./pages/Chat";
 import Cart from "./pages/Cart";
 import DietPlan from "./pages/DietPlan";
+import SearchWithAi from "./pages/SearchWithAi";
+import RecommendationDetails from "./pages/RecommendationDetails";
 
 const router = createBrowserRouter([
     {
@@ -39,6 +41,8 @@ const router = createBrowserRouter([
             { path: "cart", element: <Cart/> },
             { path: "profile", element: <Profile/> },
             { path: "diet-plan", element: <DietPlan/> },
+            { path: "search-ai/:query", element: <SearchWithAi/> },
+            {path: "recommendation/:name", element: <RecommendationDetails/>},
             { path: "*", element: <NotFound /> }
         ],
     },
