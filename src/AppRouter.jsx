@@ -22,6 +22,7 @@ import Cart from "./pages/Cart";
 import DietPlan from "./pages/DietPlan";
 import SearchWithAi from "./pages/SearchWithAi";
 import RecommendationDetails from "./pages/RecommendationDetails";
+import Favorite from "./pages/Favorite";
 
 const router = createBrowserRouter([
     {
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
             { path: "diet-plan", element: <DietPlan/> },
             { path: "search-ai/:query", element: <SearchWithAi/> },
             {path: "recommendation/:name", element: <RecommendationDetails/>},
+            { path: "favourites", element: <Favorite/>},
             { path: "*", element: <NotFound /> }
         ],
     },
