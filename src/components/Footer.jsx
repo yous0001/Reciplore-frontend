@@ -51,13 +51,18 @@ export default function Footer() {
                                     Contact
                                 </Link>
                             </li>
+                            <li>
+                                <Link to="/terms-and-conditions" className="hover:text-white transition-colors">
+                                    Terms and Conditions
+                                </Link>
+                            </li>
                         </ul>
                     </div>
 
                     {/* Contact Info */}
                     <div>
                         <h3 className="text-lg font-semibold text-white mb-4">Contact Us</h3>
-                        <ul className="space-y-2">
+                        <ul className="space- y-2">
                             <li className="flex items-center">
                                 <Mail className="w-5 h-5 mr-2" />
                                 <a href="mailto:reciplore0@gmail.com" className="hover:text-white transition-colors">
