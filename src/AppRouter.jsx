@@ -24,6 +24,7 @@ import SearchWithAi from "./pages/SearchWithAi";
 import RecommendationDetails from "./pages/RecommendationDetails";
 import Favorite from "./pages/Favorite";
 import Contact from "./pages/Contact";
+import TermsAndConditions from "./pages/TermsAndConditions";
 
 const router = createBrowserRouter([
     {
@@ -47,6 +48,7 @@ const router = createBrowserRouter([
             {path: "recommendation/:name", element: <RecommendationDetails/>},
             { path: "favourites", element: <Favorite/>},
             { path: "contact", element: <Contact /> },
+            { path: "terms-and-conditions", element: <TermsAndConditions /> },
             { path: "*", element: <NotFound /> }
         ],
     },
