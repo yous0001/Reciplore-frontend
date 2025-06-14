@@ -37,7 +37,7 @@ export default function Footer() {
                                 </Link>
                             </li>
                             <li>
-                                <Link to="/search-ai/ingredients" className="hover:text-white transition-colors">
+                                <Link to="/recipes" className="hover:text-white transition-colors">
                                     Search Recipes
                                 </Link>
                             </li>
@@ -60,19 +60,19 @@ export default function Footer() {
                         <ul className="space-y-2">
                             <li className="flex items-center">
                                 <Mail className="w-5 h-5 mr-2" />
-                                <a href="mailto:support@reciplore.com" className="hover:text-white transition-colors">
-                                    support@reciplore.com
+                                <a href="mailto:reciplore0@gmail.com" className="hover:text-white transition-colors">
+                                    reciplore0@gmail.com
                                 </a>
                             </li>
                             <li className="flex items-center">
                                 <Phone className="w-5 h-5 mr-2" />
-                                <a href="tel:+1234567890" className="hover:text-white transition-colors">
-                                    +1 (234) 567-890
+                                <a href="tel:+201276085914" className="hover:text-white transition-colors">
+                                    +20 1276085914
                                 </a>
                             </li>
                             <li className="flex items-center">
                                 <MapPin className="w-5 h-5 mr-2" />
-                                <span>123 Culinary Lane, Food City, FC 12345</span>
+                                <span>eelu-sohag university - egypt</span>
                             </li>
                         </ul>
                     </div>
