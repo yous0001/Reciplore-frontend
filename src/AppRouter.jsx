@@ -23,6 +23,7 @@ import DietPlan from "./pages/DietPlan";
 import SearchWithAi from "./pages/SearchWithAi";
 import RecommendationDetails from "./pages/RecommendationDetails";
 import Favorite from "./pages/Favorite";
+import Contact from "./pages/Contact";
 
 const router = createBrowserRouter([
     {
@@ -45,6 +46,7 @@ const router = createBrowserRouter([
             { path: "search-ai/:query", element: <SearchWithAi/> },
             {path: "recommendation/:name", element: <RecommendationDetails/>},
             { path: "favourites", element: <Favorite/>},
+            { path: "contact", element: <Contact /> },
             { path: "*", element: <NotFound /> }
         ],
     },
