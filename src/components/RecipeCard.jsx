@@ -1,16 +1,56 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import slugify from 'slugify';
+import { toast } from 'react-toastify';
+import { FaHeart, FaRegHeart } from 'react-icons/fa';
 
 const RecipeCard = ({ recipe }) => {
     const navigate = useNavigate();
+    const [isFavourite, setIsFavourite] = useState(recipe.isFavourite || false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
     const rating = Math.round(recipe.Average_rating || 0);
-    const isFavourite = recipe.isFavourite || false; // Assume isFavourite exists; replace with actual logic if needed
     recipe.slug = recipe.slug || slugify(recipe.name, {
         replacement: "_",
         lower: true,
     });
-    console.log('Rendering RecipeCard:', recipe.slug);
+
+    const handleToggleFavourite = async (e) => {
+        e.stopPropagation(); // Prevent card click navigation
+        setError(null);
+        setLoading(true);
+
+        const accessToken = Cookies.get('accessToken');
+        if (!accessToken) {
+            setError('Please log in to favorite recipes.');
+            toast.error('Please log in to favorite recipes.', { position: 'top-right', autoClose: 3000 });
+            setLoading(false);
+            return;
+        }
+
+        try {
+            const response = await axios.post(
+                `${import.meta.env.VITE_BACKEND_URL}/auth/toogle-favourite/${recipe._id}`,
+                {},
+                {
+                    headers: { accessToken: `accessToken_${accessToken}` },
+                }
+            );
+            console.log('Toggle Favourite Response:', response.data);
+            setIsFavourite(response.data.message.includes('added'));
+            toast.success(response.data.message, { position: 'top-right', autoClose: 3000 });
+            setError(null);
+        } catch (err) {
+            console.error('Toggle Favourite Error:', err.response?.status, err.response?.data);
+            setError('Failed to toggle favorite: ' + err.message);
+            toast.error('Failed to toggle favorite: ' + err.message, { position: 'top-right', autoClose: 3000 });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div
@@ -37,12 +77,19 @@ const RecipeCard = ({ recipe }) => {
                 </span>
             </div>
             <button
-                className="absolute top-2 right-2 text-4xl text-orange-500 transition-colors duration-200"
-                onMouseEnter={(e) => (e.target.textContent = '♥')}
-                onMouseLeave={(e) => (e.target.textContent = isFavourite ? '♥' : '♡')}
+                onClick={handleToggleFavourite}
+                disabled={loading}
+                className={`absolute top-2 right-2 text-2xl text-orange-500 transition-colors duration-200 ${
+                    loading ? 'opacity-50 cursor-not-allowed' : 'hover:text-orange-600'
+                }`}
             >
-                {isFavourite ? '♥' : '♡'}
+                {isFavourite ? <FaHeart /> : <FaRegHeart />}
             </button>
+            {error && (
+                <div className="absolute bottom-2 left-0 right-0 text-center text-red-500 text-sm">
+                    {error}
+                </div>
+            )}
         </div>
     );
 };
