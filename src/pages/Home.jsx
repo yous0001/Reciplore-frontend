@@ -4,6 +4,7 @@ import RecipeSearchBar from '../components/RecipeSearchBar';
 import HomeBanner from '../components/HomeBanner';
 import HomeRecipeDisplay from '../components/HomeRecipeDisplay';
 import FullBanner from '../components/FullBanner';
+import HalfBanner from '../components/HalfBanner';
 
 const Home = () => {
   const [banner, setBanner] = useState(null);
@@ -44,6 +45,19 @@ const Home = () => {
       <HomeBanner/>
       <HomeRecipeDisplay/>
       <FullBanner/>
+      <div className="container mx-auto px-4 py-5 flex flex-col lg:flex-row gap-4">
+        <HalfBanner
+          bannerName="web_half1"
+          header="Learn from the best and create culinary magic at home."
+          paragraph="Get inspired by expert tips and techniques to perfect your skills. Explore recipes that help you master new dishes, adding confidence and creativity to your home cooking experience."
+          classnames="text-white"
+        />
+        <HalfBanner
+          bannerName="web_half2"
+          header="Add flavor, flair, and a touch of creativity to your meals."
+          paragraph="Elevate your dishes with bold flavors and creative twists. From vibrant ingredients to expert techniques, discover recipes that transform your everyday cooking into something extraordinary."
+        />
+      </div>
     </>
   );
 };
