@@ -3,6 +3,7 @@ import axios from 'axios';
 import RecipeSearchBar from '../components/RecipeSearchBar';
 import HomeBanner from '../components/HomeBanner';
 import HomeRecipeDisplay from '../components/HomeRecipeDisplay';
+import FullBanner from '../components/FullBanner';
 
 const Home = () => {
   const [banner, setBanner] = useState(null);
@@ -42,6 +43,7 @@ const Home = () => {
     <>
       <HomeBanner/>
       <HomeRecipeDisplay/>
+      <FullBanner/>
     </>
   );
 };
