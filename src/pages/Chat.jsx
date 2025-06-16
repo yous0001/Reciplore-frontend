@@ -35,8 +35,8 @@ const Chat = () => {
 
     try {
       const endpoint = currentMode === 'ingredients'
-        ? 'http://localhost:3000/ai/chat/ingredients'
-        : 'http://localhost:3000/ai/chat/mood';
+        ? `${import.meta.env.VITE_BACKEND_URL}/ai/chat/ingredients`
+        : `${import.meta.env.VITE_BACKEND_URL}/ai/chat/mood`;
       const payload = currentMode === 'ingredients'
         ? { ingredients: ingredients.trim() }
         : { mood: mood.trim() };
