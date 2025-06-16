@@ -4,16 +4,21 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import slugify from 'slugify';
 import { toast } from 'react-toastify';
-import { FaHeart, FaRegHeart } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaStar } from 'react-icons/fa';
+import { motion } from 'framer-motion';
 
 const RecipeDetails = () => {
     const { slug } = useParams();
     const navigate = useNavigate();
     const [recipe, setRecipe] = useState(null);
     const [isFavourite, setIsFavourite] = useState(false);
+    const [reviews, setReviews] = useState([]);
+    const [newReview, setNewReview] = useState({ rate: 0, comment: '' });
     const [loading, setLoading] = useState(true);
     const [toggleLoading, setToggleLoading] = useState(false);
+    const [reviewLoading, setReviewLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [reviewError, setReviewError] = useState(null);
 
     useEffect(() => {
         const fetchRecipeAndFavorites = async () => {
@@ -38,12 +43,21 @@ const RecipeDetails = () => {
                     console.log('Favorites API Response:', favoritesResponse.data);
                     const favorites = favoritesResponse.data.recipes?.docs || [];
                     setIsFavourite(favorites.some((fav) => fav._id === recipeResponse.data.recipe._id));
+
+                    // Fetch reviews
+                    const reviewsResponse = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/review/`, {
+                        params: { recipeId: recipeResponse.data.recipe._id },
+                        headers: { accessToken: `accessToken_${accessToken}` },
+                    });
+                    console.log('Reviews API Response:', reviewsResponse.data);
+                    setReviews(reviewsResponse.data.reviews || []);
                 } else {
                     setIsFavourite(recipeResponse.data.recipe.isFavourite || false);
+                    setReviews([]); // No reviews if not logged in
                 }
             } catch (err) {
                 console.log('API Error:', err.response?.status, err.response?.data);
-                setError('Failed to fetch recipe or favorites: ' + err.message);
+                setError('Failed to fetch recipe, favorites, or reviews: ' + err.message);
             } finally {
                 setLoading(false);
             }
@@ -69,7 +83,7 @@ const RecipeDetails = () => {
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/auth/toogle-favourite/${recipe._id}`,
+                `${import.meta.env.VITE_BACKEND_URL}/auth/toggle-favourite/${recipe._id}`,
                 {},
                 {
                     headers: { accessToken: `accessToken_${accessToken}` },
@@ -85,6 +99,51 @@ const RecipeDetails = () => {
             setIsFavourite(previousFavouriteState); // Revert optimistic update
         } finally {
             setToggleLoading(false);
+        }
+    };
+
+    const handleReviewSubmit = async (e) => {
+        e.preventDefault();
+        setReviewError(null);
+        setReviewLoading(true);
+
+        const accessToken = Cookies.get('accessToken');
+        if (!accessToken) {
+            setReviewError('Please log in to submit a review.');
+            toast.error('Please log in to submit a review.', { position: 'top-right', autoClose: 3000 });
+            setReviewLoading(false);
+            return;
+        }
+
+        if (newReview.rate < 1 || newReview.rate > 5) {
+            setReviewError('Rating must be between 1 and 5.');
+            toast.error('Rating must be between 1 and 5.', { position: 'top-right', autoClose: 3000 });
+            setReviewLoading(false);
+            return;
+        }
+
+        try {
+            const response = await axios.post(
+                `${import.meta.env.VITE_BACKEND_URL}/review/add`,
+                {
+                    rate: newReview.rate,
+                    comment: newReview.comment,
+                    recipeId: recipe._id,
+                },
+                {
+                    headers: { accessToken: `accessToken_${accessToken}` },
+                }
+            );
+            console.log('Review Submit Response:', response.data);
+            setReviews((prev) => [response.data.review, ...prev]);
+            setNewReview({ rate: 0, comment: '' });
+            toast.success(response.data.message, { position: 'top-right', autoClose: 3000 });
+        } catch (err) {
+            console.error('Review Submit Error:', err.response?.status, err.response?.data);
+            setReviewError(err.response?.data?.message || 'Failed to submit review: ' + err.message);
+            toast.error(err.response?.data?.message || 'Failed to submit review: ' + err.message, { position: 'top-right', autoClose: 3000 });
+        } finally {
+            setReviewLoading(false);
         }
     };
 
@@ -184,6 +243,102 @@ const RecipeDetails = () => {
                                 </div>
                             ))}
                         </div>
+                    </div>
+
+                    {/* Reviews Section */}
+                    <div className="lg:col-span-3 bg-white/90 rounded-xl shadow-2xl p-8 mt-10 backdrop-blur-sm">
+                        <h2 className="text-3xl font-bold text-gray-900 mb-6 border-b-2 border-orange-300 pb-3">Reviews</h2>
+                        {reviews.length === 0 ? (
+                            <p className="text-gray-600 text-lg">No reviews yet. Be the first to share your thoughts!</p>
+                        ) : (
+                            <motion.div
+                                className="space-y-6"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.6 }}
+                            >
+                                {reviews.map((review) => (
+                                    <div
+                                        key={review._id}
+                                        className="flex items-start space-x-4 p-4 bg-orange-50 rounded-lg"
+                                    >
+                                        <img
+                                            src={review.userID?.profileImage?.secure_url || 'https://via.placeholder.com/40x40'}
+                                            alt={review.userID?.username || 'User'}
+                                            className="w-10 h-10 rounded-full object-cover border-2 border-orange-200"
+                                            onError={(e) => { e.target.src = 'https://via.placeholder.com/40x40'; }}
+                                        />
+                                        <div className="flex-1">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-lg font-semibold text-gray-900">{review.userID?.username || 'Anonymous'}</p>
+                                                <div className="flex items-center text-orange-500">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <FaStar
+                                                            key={i}
+                                                            className={i < Math.round(review.rate) ? 'text-orange-500' : 'text-gray-300'}
+                                                        />
+                                                    ))}
+                                                    <span className="ml-2 text-gray-600 text-sm">{review.rate.toFixed(1)}</span>
+                                                </div>
+                                            </div>
+                                            <p className="text-gray-700 text-base mt-2">{review.comment}</p>
+                                            <p className="text-gray-500 text-sm mt-1">
+                                                {new Date(review.createdAt).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </motion.div>
+                        )}
+
+                        {/* Review Form */}
+                        <motion.div
+                            className="mt-8"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: 0.2 }}
+                        >
+                            <h3 className="text-2xl font-semibold text-gray-900 mb-4">Add Your Review</h3>
+                            <form onSubmit={handleReviewSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Rating (1–5)</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="5"
+                                        step="0.1"
+                                        value={newReview.rate || ''}
+                                        onChange={(e) => setNewReview({ ...newReview, rate: parseFloat(e.target.value) })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        placeholder="Enter rating"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Comment</label>
+                                    <textarea
+                                        value={newReview.comment}
+                                        onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        rows="4"
+                                        placeholder="Share your thoughts..."
+                                        required
+                                    ></textarea>
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={reviewLoading}
+                                    className={`px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg shadow-md transition-all duration-300 ${
+                                        reviewLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-orange-600 hover:-translate-y-1'
+                                    }`}
+                                >
+                                    {reviewLoading ? 'Submitting...' : 'Submit Review'}
+                                </button>
+                                {reviewError && (
+                                    <p className="text-red-500 text-sm mt-2">{reviewError}</p>
+                                )}
+                            </form>
+                        </motion.div>
                     </div>
                 </div>
                 {error && (
