@@ -25,6 +25,9 @@ import RecommendationDetails from "./pages/RecommendationDetails";
 import Favorite from "./pages/Favorite";
 import Contact from "./pages/Contact";
 import TermsAndConditions from "./pages/TermsAndConditions";
+import Order from "./pages/Order";
+import Orders from "./pages/Orders";
+import OrderDetails from "./pages/OrderDetails";
 
 const router = createBrowserRouter([
     {
@@ -49,6 +52,9 @@ const router = createBrowserRouter([
             { path: "favourites", element: <Favorite/>},
             { path: "contact", element: <Contact /> },
             { path: "terms-and-conditions", element: <TermsAndConditions /> },
+            {path:"/order",element:<Order/>},
+            {path:"/orders",element:<Orders/>},
+            {path:"/order/:orderId",element:<OrderDetails/>},
             { path: "*", element: <NotFound /> }
         ],
     },

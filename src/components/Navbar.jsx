@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ShoppingCart, Heart, LogOut } from 'lucide-react';
+import { ShoppingCart, Heart, LogOut, Package, User } from 'lucide-react';
 import { useAuthStore } from '../store/authStore'; // Adjust the path as needed
 
 const navItems = [
@@ -110,6 +110,13 @@ export default function Navbar() {
                                         >
                                             Profile
                                         </NavLink>
+                                        <NavLink
+                                            to="/orders"
+                                            onClick={() => setIsProfileOpen(false)}
+                                            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center transition-all"
+                                        >
+                                            <Package size={18} className="mr-2" /> Orders
+                                        </NavLink>
                                         <button
                                             onClick={handleLogout}
                                             className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-b-md flex items-center transition-all"
@@ -213,9 +220,19 @@ export default function Navbar() {
                                                     setIsProfileOpen(false);
                                                     setIsOpen(false);
                                                 }}
-                                                className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                                                className="block px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center rounded"
                                             >
-                                                Profile
+                                                <User size={18} className="mr-2" /> Profile
+                                            </NavLink>
+                                            <NavLink
+                                                to="/orders"
+                                                onClick={() => {
+                                                    setIsProfileOpen(false);
+                                                    setIsOpen(false);
+                                                }}
+                                                className="block px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center rounded"
+                                            >
+                                                <Package size={18} className="mr-2" /> Orders
                                             </NavLink>
                                             <button
                                                 onClick={handleLogout}
@@ -263,8 +280,7 @@ export default function Navbar() {
                 )}
             </div>
         </header>
-        {scrolled?<div className='my-16'/>:""}
-        
+        {scrolled ? <div className='my-16'/> : ""}
         </>
     );
 }
