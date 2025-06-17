@@ -12,25 +12,42 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const { register, error, isLoading } = useAuthStore();
+  const [formError, setFormError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const { register, isLoading } = useAuthStore();
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setFormError('');
+    setFieldErrors({});
+
     try {
       await register(name, email, password, phoneNumber);
-      toast.success('Verification link sent successfully!', {
-        position: 'top-right',
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: 'dark',
-      });
+      toast.success('Verification link sent successfully!');
       navigate('/auth/login');
     } catch (error) {
-      console.log('Registration error:', error);
+      const res = error?.response?.data;
+      console.log(res)
+      if (res?.message === 'validation error' && Array.isArray(res?.errors)) {
+        const flatErrors = res.errors.flat();
+        const errorsMap = {};
+        console.log(flatErrors)
+        flatErrors.forEach((err) => {
+          const field = err?.path?.[0];
+          const message = err?.message;
+          if (field && message) {
+            errorsMap[field] = message;
+          }
+        });
+
+        setFieldErrors(errorsMap);
+      } else {
+        const message = res?.message || error?.message || 'Registration failed';
+        setFormError(message);
+        toast.error(message);
+      }
     }
   };
 
@@ -46,6 +63,7 @@ export default function Register() {
           Create account
         </h2>
         <form onSubmit={handleRegister}>
+          {fieldErrors.name && <p className="text-red-500 text-sm mt-1">{fieldErrors.name}</p>}
           <Input
             placeholder="Full name"
             type="text"
@@ -54,6 +72,8 @@ export default function Register() {
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+          
+          {fieldErrors.email && <p className="text-red-500 text-sm mt-1">{fieldErrors.email}</p>}
           <Input
             placeholder="Email Address"
             type="email"
@@ -62,6 +82,10 @@ export default function Register() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
+          
+          {fieldErrors.phoneNumbers && (
+            <p className="text-red-500 text-sm mt-1">{fieldErrors.phoneNumbers}</p>
+          )}
           <Input
             placeholder="Phone Number"
             type="text"
@@ -70,6 +94,10 @@ export default function Register() {
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
           />
+          
+          {fieldErrors.password && (
+            <p className="text-red-500 text-sm mt-1">{fieldErrors.password}</p>
+          )}
           <Input
             placeholder="Password"
             type="password"
@@ -78,8 +106,12 @@ export default function Register() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          {error && <p className="text-red-500 mt-2">{error}</p>}
+          
+
           <PasswordStrengthMeter password={password} />
+
+          {formError && <p className="text-red-500 mt-3">{formError}</p>}
+
           <motion.button
             className="mt-5 w-full py-3 px-4 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold rounded-lg shadow-lg hover:from-orange-600 hover:to-amber-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-200"
             whileHover={{ scale: 1.02 }}
