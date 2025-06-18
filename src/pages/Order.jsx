@@ -4,7 +4,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
-import { CreditCard, HandCoins } from 'lucide-react';
+import { CreditCard, HandCoins, Plus } from 'lucide-react';
 
 const Order = () => {
     const navigate = useNavigate();
@@ -17,6 +17,18 @@ const Order = () => {
     const [loading, setLoading] = useState(true);
     const [orderLoading, setOrderLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [addressError, setAddressError] = useState(null);
+    const [addressForm, setAddressForm] = useState({
+        country: '',
+        city: '',
+        postalCode: '',
+        buildingNumber: '',
+        floorNumber: '',
+        streetName: '',
+        addressLabel: '',
+        notes: '',
+    });
 
     useEffect(() => {
         const fetchOrderDetails = async () => {
@@ -56,6 +68,73 @@ const Order = () => {
 
         fetchOrderDetails();
     }, [cart, couponCode]);
+
+    const handleAddressFormChange = (e) => {
+        const { name, value } = e.target;
+        setAddressForm((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleAddAddress = async () => {
+        const accessToken = Cookies.get('accessToken');
+        if (!accessToken) {
+            setAddressError('Please log in to add an address.');
+            toast.error('Please log in to add an address.', { position: 'top-right', autoClose: 3000 });
+            return;
+        }
+
+        const requiredFields = ['country', 'city', 'postalCode', 'buildingNumber', 'floorNumber', 'streetName'];
+        for (const field of requiredFields) {
+            if (!addressForm[field].trim()) {
+                const fieldName = field.replace(/([A-Z])/g, ' $1').toLowerCase();
+                setAddressError(`Please fill in the ${fieldName}.`);
+                toast.error(`Please fill in the ${fieldName}.`, { position: 'top-right', autoClose: 3000 });
+                return;
+            }
+        }
+
+        setOrderLoading(true);
+        setAddressError(null);
+        try {
+            const response = await axios.post(
+                `${import.meta.env.VITE_BACKEND_URL}/address/add`,
+                {
+                    country: addressForm.country,
+                    city: addressForm.city,
+                    postalCode: parseInt(addressForm.postalCode),
+                    buildingNumber: addressForm.buildingNumber,
+                    floorNumber: addressForm.floorNumber,
+                    streetName: addressForm.streetName,
+                    addressLabel: addressForm.addressLabel || undefined,
+                    notes: addressForm.notes || undefined,
+                },
+                { headers: { accessToken: `accessToken_${accessToken}` } }
+            );
+            console.log('Add Address Response:', response.data);
+            setOrderDetails((prev) => ({
+                ...prev,
+                addresses: [...prev.addresses, response.data.address],
+            }));
+            setSelectedAddressID(response.data.address._id);
+            setIsModalOpen(false);
+            setAddressForm({
+                country: '',
+                city: '',
+                postalCode: '',
+                buildingNumber: '',
+                floorNumber: '',
+                streetName: '',
+                addressLabel: '',
+                notes: '',
+            });
+            toast.success('Address added successfully!', { position: 'top-right', autoClose: 3000 });
+        } catch (err) {
+            console.log('Add Address Error:', err.response?.status, err.response?.data);
+            setAddressError(err.response?.data?.message || 'Failed to add address: ' + err.message);
+            toast.error(err.response?.data?.message || 'Failed to add address: ' + err.message, { position: 'top-right', autoClose: 3000 });
+        } finally {
+            setOrderLoading(false);
+        }
+    };
 
     const handleCreateOrder = async () => {
         const accessToken = Cookies.get('accessToken');
@@ -147,10 +226,19 @@ const Order = () => {
                                     <option value="">Select an address</option>
                                     {orderDetails.addresses.map((address) => (
                                         <option key={address._id} value={address._id}>
-                                            {address.addressLabel} - {address.streetName}, {address.city}, {address.country} {address.isDefault && '(Default)'}
+                                            {address.addressLabel || 'Address'} - {address.streetName}, {address.city}, {address.country} {address.isDefault && '(Default)'}
                                         </option>
                                     ))}
                                 </select>
+                                <button
+                                    onClick={() => {
+                                        setIsModalOpen(true);
+                                        setAddressError(null);
+                                    }}
+                                    className="mt-2 inline-flex items-center px-4 py-2 bg-transparent border border-orange-500 text-orange-600 font-semibold rounded-xl hover:bg-orange-100 transition-all duration-300 transform hover:scale-105"
+                                >
+                                    <Plus size={18} className="mr-2" /> Add New Address
+                                </button>
                             </div>
 
                             {/* Contact Number */}
@@ -171,23 +259,23 @@ const Order = () => {
                                 <div className="flex space-x-4">
                                     <button
                                         onClick={() => setPaymentMethod('stripe')}
-                                        className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 flex justify-center align-center ${
+                                        className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center ${
                                             paymentMethod === 'stripe'
                                                 ? 'bg-orange-600 text-white shadow-md'
                                                 : 'bg-orange-200 text-gray-900 hover:bg-orange-300'
                                         }`}
                                     >
-                                        <CreditCard/>  Card 
+                                        <CreditCard size={18} className="mr-2" /> Card
                                     </button>
                                     <button
                                         onClick={() => setPaymentMethod('cash')}
-                                        className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 flex justify-center align-center ${
+                                        className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center ${
                                             paymentMethod === 'cash'
                                                 ? 'bg-orange-600 text-white shadow-md'
                                                 : 'bg-orange-200 text-gray-900 hover:bg-orange-300'
                                         }`}
                                     >
-                                        <HandCoins/>  Cash 
+                                        <HandCoins size={18} /> Cash
                                     </button>
                                 </div>
                             </div>
@@ -208,6 +296,161 @@ const Order = () => {
                         </div>
                     </div>
                 </motion.div>
+
+                {/* Add Address Modal */}
+                {isModalOpen && (
+                    <div
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto"
+                        onClick={() => {
+                            setIsModalOpen(false);
+                            setAddressForm({
+                                country: '',
+                                city: '',
+                                postalCode: '',
+                                buildingNumber: '',
+                                floorNumber: '',
+                                streetName: '',
+                                addressLabel: '',
+                                notes: '',
+                            });
+                            setAddressError(null);
+                        }}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.3 }}
+                            className="bg-white/90 rounded-2xl shadow-lg p-5 backdrop-blur-lg border border-orange-300/50 w-full max-w-sm max-h-[80vh] overflow-y-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Add New Address</h2>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Country *</label>
+                                    <input
+                                        type="text"
+                                        name="country"
+                                        value={addressForm.country}
+                                        onChange={handleAddressFormChange}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        placeholder="e.g., Egypt"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">City *</label>
+                                    <input
+                                        type="text"
+                                        name="city"
+                                        value={addressForm.city}
+                                        onChange={handleAddressFormChange}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        placeholder="e.g., Tahta"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Postal Code *</label>
+                                    <input
+                                        type="text"
+                                        name="postalCode"
+                                        value={addressForm.postalCode}
+                                        onChange={handleAddressFormChange}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        placeholder="e.g., 82621"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm">Building Number *</label>
+                                    <input
+                                        type="text"
+                                        name="buildingNumber"
+                                        value={addressForm.buildingNumber}
+                                        onChange={handleAddressFormChange}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        placeholder="e.g., A6"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Floor Number *</label>
+                                    <input
+                                        type="text"
+                                        name="floorNumber"
+                                        value={addressForm.floorNumber}
+                                        onChange={handleAddressFormChange}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        placeholder="e.g., 7"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Street Name *</label>
+                                    <input
+                                        type="text"
+                                        name="streetName"
+                                        value={addressForm.streetName}
+                                        onChange={handleAddressFormChange}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        placeholder="e.g., Elsahel"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Address Label</label>
+                                    <input
+                                        type="text"
+                                        name="addressLabel"
+                                        value={addressForm.addressLabel}
+                                        onChange={handleAddressFormChange}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        placeholder="e.g., Home (optional)"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-1">Notes</label>
+                                    <textarea
+                                        name="notes"
+                                        value={addressForm.notes}
+                                        onChange={handleAddressFormChange}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        placeholder="e.g., This is my home address (optional)"
+                                        rows={3}
+                                    />
+                                </div>
+                                {addressError && (
+                                    <p className="text-red-500 text-sm">{addressError}</p>
+                                )}
+                                <div className="flex justify-end gap-3">
+                                    <button
+                                        onClick={() => {
+                                            setIsModalOpen(false);
+                                            setAddressForm({
+                                                country: '',
+                                                city: '',
+                                                postalCode: '',
+                                                buildingNumber: '',
+                                                floorNumber: '',
+                                                streetName: '',
+                                                addressLabel: '',
+                                                notes: '',
+                                            });
+                                            setAddressError(null);
+                                        }}
+                                        className="px-4 py-2 bg-transparent border border-orange-500 text-orange-600 font-semibold rounded-xl hover:bg-orange-100 transition-all duration-300"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleAddAddress}
+                                        disabled={orderLoading}
+                                        className={`px-4 py-2 bg-orange-500 text-white font-semibold rounded-xl transition-all duration-300 ${
+                                            orderLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-orange-600 hover:-translate-y-1'
+                                        }`}
+                                    >
+                                        {orderLoading ? 'Saving...' : 'Save Address'}
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
             </div>
         </div>
     );
