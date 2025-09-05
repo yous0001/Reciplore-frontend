@@ -280,7 +280,7 @@ const RecipeList = () => {
     };
 
     const sidebarVariants = {
-        hidden: { x: '-100%' },
+        hidden: { x: '100%' },
         visible: { 
             x: 0,
             transition: { type: 'spring', damping: 25, stiffness: 200 }
@@ -444,7 +444,6 @@ const RecipeList = () => {
                     </>
                 )}
 
-                {/* Filter Sidebar Overlay */}
                 <AnimatePresence>
                     {showFilters && (
                         <>
@@ -458,18 +457,18 @@ const RecipeList = () => {
                             />
                             
                             <motion.div 
-                                className="fixed inset-y-0 left-0 max-w-full flex z-50"
+                                className="fixed inset-y-0 right-0 max-w-full flex z-50"
                                 variants={sidebarVariants}
                                 initial="hidden"
                                 animate="visible"
                                 exit="hidden"
                             >
                                 <div className="w-screen max-w-md">
-                                    <div className="h-full flex flex-col bg-white shadow-xl overflow-y-auto">
+                                    <div className="h-full flex flex-col bg-white shadow-xl">
                                         <div className="flex-1 py-6 px-4 sm:px-6">
                                             {/* Header */}
                                             <div className="flex items-center justify-between mb-6">
-                                                <h2 className="text-xl font-semibold text-gray-900">Filters & Sort</h2>
+                                                <h2 className="text-xl font-semibold text-gray-900">Filters</h2>
                                                 <button
                                                     type="button"
                                                     className="rounded-md p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-colors"
@@ -482,11 +481,10 @@ const RecipeList = () => {
                                                 </button>
                                             </div>
 
-                                            {/* Filters */}
-                                            <div className="space-y-4">
-                                                <h3 className="text-sm font-medium text-gray-900">Filters</h3>
+                                            {/* Filters Only - No Sorting Options */}
+                                            <div className="space-y-6">
                                                 <div>
-                                                    <label className="block text-sm text-gray-700 mb-1">Rating (0-5)</label>
+                                                    <h3 className="text-sm font-medium text-gray-900 mb-3">Rating (0-5)</h3>
                                                     <div className="flex gap-3">
                                                         <input
                                                             type="number"
@@ -494,7 +492,7 @@ const RecipeList = () => {
                                                             placeholder="Min"
                                                             value={filters.minRating}
                                                             onChange={handleFilterChange}
-                                                            className="flex-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                            className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                                                             min="0"
                                                             max="5"
                                                             step="0.1"
@@ -505,7 +503,7 @@ const RecipeList = () => {
                                                             placeholder="Max"
                                                             value={filters.maxRating}
                                                             onChange={handleFilterChange}
-                                                            className="flex-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                            className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                                                             min="0"
                                                             max="5"
                                                             step="0.1"
@@ -514,7 +512,7 @@ const RecipeList = () => {
                                                 </div>
 
                                                 <div>
-                                                    <label className="block text-sm text-gray-700 mb-1">Views</label>
+                                                    <h3 className="text-sm font-medium text-gray-900 mb-3">Views</h3>
                                                     <div className="flex gap-3">
                                                         <input
                                                             type="number"
@@ -522,7 +520,7 @@ const RecipeList = () => {
                                                             placeholder="Min"
                                                             value={filters.minViews}
                                                             onChange={handleFilterChange}
-                                                            className="flex-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                            className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                                                             min="0"
                                                         />
                                                         <input
@@ -531,7 +529,7 @@ const RecipeList = () => {
                                                             placeholder="Max"
                                                             value={filters.maxViews}
                                                             onChange={handleFilterChange}
-                                                            className="flex-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                            className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                                                             min="0"
                                                         />
                                                     </div>
