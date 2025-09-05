@@ -116,7 +116,7 @@ const Market = () => {
     useEffect(() => {
         const accessToken = Cookies.get('accessToken');
         if (!accessToken) {
-            setError('No access token available');
+            setError('please login first to view market');
             setLoading(false);
             return;
         }

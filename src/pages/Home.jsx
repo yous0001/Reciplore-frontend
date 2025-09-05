@@ -5,6 +5,7 @@ import HomeBanner from '../components/HomeBanner';
 import HomeRecipeDisplay from '../components/HomeRecipeDisplay';
 import FullBanner from '../components/FullBanner';
 import HalfBanner from '../components/HalfBanner';
+import  CategorySlider from '../components/CategorySlider';
 
 const Home = () => {
   const [banner, setBanner] = useState(null);
@@ -43,8 +44,10 @@ const Home = () => {
   return (
     <>
       <HomeBanner/>
+      <CategorySlider/>
       <HomeRecipeDisplay/>
       <FullBanner/>
+      
       <div className="container mx-auto px-4 py-5 flex flex-col lg:flex-row gap-4">
         <HalfBanner
           bannerName="web_half1"

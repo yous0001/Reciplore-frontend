@@ -11,7 +11,6 @@ const HomeRecipeDisplay = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeCategory, setActiveCategory] = useState('Latest Recipes');
-    const { restoreSession, isAuthenticated } = useAuthStore();
 
     useEffect(() => {
         const fetchRecipes = async () => {
@@ -19,24 +18,19 @@ const HomeRecipeDisplay = () => {
             setError(null);
 
             const accessToken = Cookies.get('accessToken');
-            if (!accessToken) {
-                setError('No access token available');
-                setLoading(false);
-                return;
-            }
-
+            const headers = (accessToken) ? { accessToken: `accessToken_${accessToken}` } : {}
             try {
                 const [latestRes, popularRes, ratedRes] = await Promise.all([
                     axios.get(`${import.meta.env.VITE_BACKEND_URL}/recipe/list`, {
-                        headers: { accessToken: `accessToken_${accessToken}` },
-                        params: { sort: '-createdAt', limit: 8},
+                        headers: headers,
+                        params: { sort: '-createdAt', limit: 8 },
                     }),
                     axios.get(`${import.meta.env.VITE_BACKEND_URL}/recipe/list`, {
-                        headers: { accessToken: `accessToken_${accessToken}` },
+                        headers: headers,
                         params: { sort: '-views', limit: 8 },
                     }),
                     axios.get(`${import.meta.env.VITE_BACKEND_URL}/recipe/list`, {
-                        headers: { accessToken: `accessToken_${accessToken}` },
+                        headers: headers,
                         params: { sort: '-Average_rating', limit: 8 },
                     }),
                 ]);

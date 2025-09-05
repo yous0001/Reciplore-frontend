@@ -5,6 +5,7 @@ import RecipeCard from '../components/RecipeCard';
 import Cookies from 'js-cookie';
 import { debounce } from 'lodash';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 
 const RecipeList = () => {
     const [recipes, setRecipes] = useState([]);
@@ -17,6 +18,8 @@ const RecipeList = () => {
         maxRating: '',
         minViews: '',
         maxViews: '',
+        category: '',
+        country: '',
     });
     const [page, setPage] = useState(1);
     const [limit] = useState(12);
@@ -25,11 +28,70 @@ const RecipeList = () => {
     const [hasPrevPage, setHasPrevPage] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
     const [activeFiltersCount, setActiveFiltersCount] = useState(0);
-    const { restoreSession, isAuthenticated } = useAuthStore();
-    
+    const [categories, setCategories] = useState([]);
+    const [countries, setCountries] = useState([]);
+    const [searchParams, setSearchParams] = useSearchParams();
+
     // Use refs to track previous values
     const prevParamsRef = useRef({});
     const isInitialMount = useRef(true);
+
+    // Fetch categories for the filter dropdown
+    const fetchCategories = async () => {
+        try {
+            const accessToken = Cookies.get('accessToken');
+            const config = accessToken
+                ? { headers: { accessToken: `accessToken_${accessToken}` } }
+                : {};
+
+            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/category/`, config);
+            setCategories(response.data.categories || []);
+        } catch (err) {
+            console.error('Failed to fetch categories:', err);
+        }
+    };
+
+    // Fetch countries from API - based on the provided response structure
+    const fetchCountries = async () => {
+        try {
+            const accessToken = Cookies.get('accessToken');
+            const config = accessToken
+                ? { headers: { accessToken: `accessToken_${accessToken}` } }
+                : {};
+
+            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/country/`, config);
+
+            // Extract country names from the API response
+            // Based on the structure: { countries: [{ name: "Country1" }, { name: "Country2" }, ...] }
+            const countryData = response.data.countries || [];
+
+            setCountries(countryData);
+        } catch (err) {
+            console.error('Failed to fetch countries:', err);
+        }
+    };
+
+    // Check for category filter from URL parameters
+    useEffect(() => {
+        const categoryParam = searchParams.get('category');
+        if (categoryParam) {
+            setFilters(prev => ({
+                ...prev,
+                category: categoryParam
+            }));
+
+            // Remove the category parameter from URL after reading it
+            // to prevent it from being reapplied on refresh
+            const newSearchParams = new URLSearchParams(searchParams);
+            newSearchParams.delete('category');
+            setSearchParams(newSearchParams);
+        }
+    }, [searchParams, setSearchParams]);
+
+    useEffect(() => {
+        fetchCategories();
+        fetchCountries();
+    }, []);
 
     // Count active filters
     useEffect(() => {
@@ -50,10 +112,12 @@ const RecipeList = () => {
         setError(null);
 
         try {
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/recipe/list`, {
-                headers: { accessToken: `accessToken_${accessToken}` },
-                params,
-            });
+            // Conditionally add auth header
+            const config = accessToken
+                ? { headers: { accessToken: `accessToken_${accessToken}` }, params }
+                : { params };
+
+            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/recipe/list`, config);
 
             const recipesData = response.data.recipes?.docs || [];
             const totalItems = response.data.recipes?.totalDocs || 0;
@@ -81,17 +145,14 @@ const RecipeList = () => {
 
     useEffect(() => {
         const accessToken = Cookies.get('accessToken');
-        if (!accessToken) {
-            setError('No access token available');
-            setLoading(false);
-            return;
-        }
 
         const filterParams = {};
         if (filters.minRating) filterParams['Average_rating[gte]'] = filters.minRating;
         if (filters.maxRating) filterParams['Average_rating[lte]'] = filters.maxRating;
         if (filters.minViews) filterParams['views[gte]'] = filters.minViews;
         if (filters.maxViews) filterParams['views[lte]'] = filters.maxViews;
+        if (filters.category) filterParams.category = filters.category;
+        if (filters.country) filterParams.country = filters.country;
         if (searchTerm) filterParams.search = searchTerm;
 
         let sortParam = '';
@@ -124,7 +185,7 @@ const RecipeList = () => {
         }
 
         // Use debounced fetch for search/filter changes, immediate fetch for page changes
-        if (searchTerm || filters.minRating || filters.maxRating || filters.minViews || filters.maxViews) {
+        if (searchTerm || filters.minRating || filters.maxRating || filters.minViews || filters.maxViews || filters.category || filters.country) {
             debouncedFetchRecipes(params, accessToken);
         } else {
             fetchRecipes(params, accessToken);
@@ -152,41 +213,42 @@ const RecipeList = () => {
     const handleFormSubmit = (e) => {
         e?.preventDefault();
         setShowFilters(false);
-        
+
         // Force a refresh when form is explicitly submitted
         const accessToken = Cookies.get('accessToken');
-        if (accessToken) {
-            const filterParams = {};
-            if (filters.minRating) filterParams['Average_rating[gte]'] = filters.minRating;
-            if (filters.maxRating) filterParams['Average_rating[lte]'] = filters.maxRating;
-            if (filters.minViews) filterParams['views[gte]'] = filters.minViews;
-            if (filters.maxViews) filterParams['views[lte]'] = filters.maxViews;
-            if (searchTerm) filterParams.search = searchTerm;
 
-            let sortParam = '';
-            switch (activeCategory) {
-                case 'Latest Recipes':
-                    sortParam = '-createdAt';
-                    break;
-                case 'Most Popular Recipes':
-                    sortParam = '-views';
-                    break;
-                case 'Top Rated Recipes':
-                    sortParam = '-Average_rating';
-                    break;
-                default:
-                    sortParam = '-createdAt';
-            }
+        const filterParams = {};
+        if (filters.minRating) filterParams['Average_rating[gte]'] = filters.minRating;
+        if (filters.maxRating) filterParams['Average_rating[lte]'] = filters.maxRating;
+        if (filters.minViews) filterParams['views[gte]'] = filters.minViews;
+        if (filters.maxViews) filterParams['views[lte]'] = filters.maxViews;
+        if (filters.category) filterParams.category = filters.category;
+        if (filters.country) filterParams.country = filters.country;
+        if (searchTerm) filterParams.search = searchTerm;
 
-            const params = {
-                ...filterParams,
-                sort: sortParam,
-                page,
-                limit,
-            };
-            
-            fetchRecipes(params, accessToken);
+        let sortParam = '';
+        switch (activeCategory) {
+            case 'Latest Recipes':
+                sortParam = '-createdAt';
+                break;
+            case 'Most Popular Recipes':
+                sortParam = '-views';
+                break;
+            case 'Top Rated Recipes':
+                sortParam = '-Average_rating';
+                break;
+            default:
+                sortParam = '-createdAt';
         }
+
+        const params = {
+            ...filterParams,
+            sort: sortParam,
+            page,
+            limit,
+        };
+
+        fetchRecipes(params, accessToken);
     };
 
     const clearFilters = () => {
@@ -195,6 +257,8 @@ const RecipeList = () => {
             maxRating: '',
             minViews: '',
             maxViews: '',
+            category: '',
+            country: '',
         });
         setPage(1);
         setShowFilters(false);
@@ -204,9 +268,9 @@ const RecipeList = () => {
     const getPaginationItems = () => {
         const maxVisiblePages = 5;
         const items = [];
-        
+
         if (totalPages <= 1) return items;
-        
+
         let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
         let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
@@ -246,8 +310,8 @@ const RecipeList = () => {
     const renderSkeleton = () => (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {Array.from({ length: 12 }).map((_, index) => (
-                <motion.div 
-                    key={index} 
+                <motion.div
+                    key={index}
                     className="bg-white rounded-xl shadow-md overflow-hidden"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -267,7 +331,7 @@ const RecipeList = () => {
         </div>
     );
 
-    const categories = [
+    const sortOptions = [
         { title: 'Latest Recipes' },
         { title: 'Most Popular Recipes' },
         { title: 'Top Rated Recipes' },
@@ -281,7 +345,7 @@ const RecipeList = () => {
 
     const sidebarVariants = {
         hidden: { x: '100%' },
-        visible: { 
+        visible: {
             x: 0,
             transition: { type: 'spring', damping: 25, stiffness: 200 }
         }
@@ -292,7 +356,7 @@ const RecipeList = () => {
             {/* Main Content Area */}
             <div className="flex-1 pt-16 p-4 lg:p-6">
                 {/* Header with search and filter buttons */}
-                <motion.div 
+                <motion.div
                     className="flex flex-col md:flex-row gap-4 mb-6"
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -324,7 +388,7 @@ const RecipeList = () => {
                             }}
                             className="w-full md:w-auto p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white shadow-sm"
                         >
-                            {categories.map((category) => (
+                            {sortOptions.map((category) => (
                                 <option key={category.title} value={category.title}>
                                     {category.title}
                                 </option>
@@ -351,6 +415,34 @@ const RecipeList = () => {
                     </motion.button>
                 </motion.div>
 
+                {/* Active filters display */}
+                {(filters.category || filters.country) && (
+                    <div className="mb-4 flex flex-wrap gap-2">
+                        {filters.category && (
+                            <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm flex items-center">
+                                Category: {categories.find(cat => cat._id === filters.category)?.name || filters.category}
+                                <button
+                                    onClick={() => setFilters(prev => ({ ...prev, category: '' }))}
+                                    className="ml-2 text-orange-600 hover:text-orange-800"
+                                >
+                                    ×
+                                </button>
+                            </span>
+                        )}
+                        {filters.country && (
+                            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm flex items-center">
+                                Cuisine: {countries.find(cat => cat._id === filters.country)?.name || filters.country}
+                                <button
+                                    onClick={() => setFilters(prev => ({ ...prev, country: '' }))}
+                                    className="ml-2 text-blue-600 hover:text-blue-800"
+                                >
+                                    ×
+                                </button>
+                            </span>
+                        )}
+                    </div>
+                )}
+
                 {/* Recipe Grid */}
                 {loading ? (
                     renderSkeleton()
@@ -358,7 +450,7 @@ const RecipeList = () => {
                     <div className="text-center text-red-500 py-10">{error}</div>
                 ) : (
                     <>
-                        <motion.div 
+                        <motion.div
                             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -377,14 +469,14 @@ const RecipeList = () => {
                                 ))
                             ) : (
                                 <div className="col-span-full text-center text-gray-500 py-10">
-                                    No recipes to display
+                                    No recipes found matching your criteria
                                 </div>
                             )}
                         </motion.div>
 
                         {/* Pagination */}
                         {totalPages > 1 && (
-                            <motion.div 
+                            <motion.div
                                 className="flex justify-center items-center mt-8 space-x-2"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -411,13 +503,12 @@ const RecipeList = () => {
                                         key={`${item.type}-${item.label}-${index}`}
                                         onClick={() => item.type === 'page' && handlePageChange(item.number)}
                                         disabled={item.type === 'ellipsis' || page === item.number}
-                                        className={`px-3 py-2 rounded-lg transition-colors shadow-sm ${
-                                            item.type === 'ellipsis'
-                                                ? 'bg-transparent text-gray-700 cursor-default'
-                                                : page === item.number
+                                        className={`px-3 py-2 rounded-lg transition-colors shadow-sm ${item.type === 'ellipsis'
+                                            ? 'bg-transparent text-gray-700 cursor-default'
+                                            : page === item.number
                                                 ? 'bg-orange-500 text-white'
                                                 : 'bg-white text-gray-700 hover:bg-orange-500 hover:text-white'
-                                        }`}
+                                            }`}
                                         aria-label={item.type === 'page' ? `Page ${item.label}` : undefined}
                                     >
                                         {item.label}
@@ -455,8 +546,8 @@ const RecipeList = () => {
                                 exit="hidden"
                                 onClick={() => setShowFilters(false)}
                             />
-                            
-                            <motion.div 
+
+                            <motion.div
                                 className="fixed inset-y-0 right-0 max-w-full flex z-50"
                                 variants={sidebarVariants}
                                 initial="hidden"
@@ -481,8 +572,44 @@ const RecipeList = () => {
                                                 </button>
                                             </div>
 
-                                            {/* Filters Only - No Sorting Options */}
+                                            {/* Filters - Added Category and Country */}
                                             <div className="space-y-6">
+                                                {/* Category Filter */}
+                                                <div>
+                                                    <h3 className="text-sm font-medium text-gray-900 mb-3">Category</h3>
+                                                    <select
+                                                        name="category"
+                                                        value={filters.category}
+                                                        onChange={handleFilterChange}
+                                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                    >
+                                                        <option value="">All Categories</option>
+                                                        {categories.map(category => (
+                                                            <option key={category._id} value={category._id}>
+                                                                {category.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                {/* Country Filter */}
+                                                <div>
+                                                    <h3 className="text-sm font-medium text-gray-900 mb-3">Cuisine</h3>
+                                                    <select
+                                                        name="country"
+                                                        value={filters.country}
+                                                        onChange={handleFilterChange}
+                                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                    >
+                                                        <option value="">All Cuisines</option>
+                                                        {countries.map(country => (
+                                                            <option key={country._id} value={country._id}>
+                                                                {country.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
                                                 <div>
                                                     <h3 className="text-sm font-medium text-gray-900 mb-3">Rating (0-5)</h3>
                                                     <div className="flex gap-3">

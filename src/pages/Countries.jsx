@@ -24,7 +24,6 @@ const Countries = () => {
     const [limit] = useState(8);
     const [totalPages, setTotalPages] = useState(0);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const { isAuthenticated } = useAuthStore();
 
     // Debounced fetch for search and filters
     const debouncedFetchRecipes = useCallback(
@@ -37,8 +36,9 @@ const Countries = () => {
     // Fetch countries
     const fetchCountries = async (accessToken) => {
         try {
+            const headers = (accessToken) ? { accessToken: `accessToken_${accessToken}` } : {}
             const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/country/`, {
-                headers: { accessToken: `accessToken_${accessToken}` },
+                headers,
             });
             console.log('Countries API Response:', response.data); // Debug
             const countriesData = response.data.countries || [];
@@ -59,7 +59,7 @@ const Countries = () => {
 
         try {
             const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/recipe/list`, {
-                headers: { accessToken: `accessToken_${accessToken}` },
+                headers: (accessToken) ? { accessToken: `accessToken_${accessToken}` } : {},
                 params,
             });
             console.log('Recipes API Response:', response.data); // Debug
@@ -82,11 +82,6 @@ const Countries = () => {
 
     useEffect(() => {
         const accessToken = Cookies.get('accessToken');
-        if (!accessToken) {
-            setError('No access token available');
-            setLoading(false);
-            return;
-        }
 
         if (!selectedCountry) {
             fetchCountries(accessToken);
@@ -211,9 +206,8 @@ const Countries = () => {
             {/* Sidebar */}
             {selectedCountry && (
                 <div
-                    className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${
-                        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                    } lg:translate-x-0 transition-transform duration-300 ease-in-out p-6`}
+                    className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                        } lg:translate-x-0 transition-transform duration-300 ease-in-out p-6`}
                 >
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-xl font-bold text-gray-900">Filters & Sort</h2>
@@ -233,11 +227,10 @@ const Countries = () => {
                                         setActiveSort(sort.title);
                                         setPage(1);
                                     }}
-                                    className={`text-left px-4 py-2 rounded-lg transition-colors duration-200 ${
-                                        activeSort === sort.title
+                                    className={`text-left px-4 py-2 rounded-lg transition-colors duration-200 ${activeSort === sort.title
                                             ? 'bg-orange-500 text-white'
                                             : 'text-gray-500 hover:bg-gray-100'
-                                    }`}
+                                        }`}
                                 >
                                     {sort.title}
                                 </button>
@@ -387,13 +380,12 @@ const Countries = () => {
                                         key={`${item.type}-${item.label}-${index}`}
                                         onClick={() => item.type === 'page' && handlePageChange(item.number)}
                                         disabled={item.type === 'ellipsis' || page === item.number}
-                                        className={`px-3 py-2 rounded-lg transition-colors ${
-                                            item.type === 'ellipsis'
+                                        className={`px-3 py-2 rounded-lg transition-colors ${item.type === 'ellipsis'
                                                 ? 'bg-transparent text-gray-700 cursor-default'
                                                 : page === item.number
-                                                ? 'bg-orange-500 text-white'
-                                                : 'bg-gray-200 text-gray-700 hover:bg-orange-500 hover:text-white'
-                                        }`}
+                                                    ? 'bg-orange-500 text-white'
+                                                    : 'bg-gray-200 text-gray-700 hover:bg-orange-500 hover:text-white'
+                                            }`}
                                         aria-label={item.type === 'page' ? `Page ${item.label}` : undefined}
                                     >
                                         {item.label}

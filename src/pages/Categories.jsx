@@ -39,8 +39,9 @@ const Categories = () => {
     // Fetch categories
     const fetchCategories = async (accessToken) => {
         try {
+            const headers = (accessToken) ? { accessToken: `accessToken_${accessToken}` } : {}
             const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/category/`, {
-                headers: { accessToken: `accessToken_${accessToken}` },
+                headers,
             });
             console.log('Categories API Response:', response.data); // Debug
             const categoriesData = response.data.categories || [];
@@ -64,7 +65,7 @@ const Categories = () => {
 
         try {
             const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/recipe/list`, {
-                headers: { accessToken: `accessToken_${accessToken}` },
+                headers:(accessToken)? { accessToken: `accessToken_${accessToken}` }:{},
                 params,
             });
             console.log('Recipes API Response:', response.data); // Debug
@@ -87,11 +88,6 @@ const Categories = () => {
 
     useEffect(() => {
         const accessToken = Cookies.get('accessToken');
-        if (!accessToken) {
-            setError('No access token available');
-            setLoading(false);
-            return;
-        }
 
         if (!selectedCategory) {
             fetchCategories(accessToken);
