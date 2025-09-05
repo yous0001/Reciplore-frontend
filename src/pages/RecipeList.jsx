@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { useAuthStore } from '../store/authStore'; // Adjust path
+import { useAuthStore } from '../store/authStore';
 import RecipeCard from '../components/RecipeCard';
 import Cookies from 'js-cookie';
 import { debounce } from 'lodash';
@@ -20,10 +20,16 @@ const RecipeList = () => {
     const [page, setPage] = useState(1);
     const [limit] = useState(12);
     const [totalPages, setTotalPages] = useState(0);
+    const [hasNextPage, setHasNextPage] = useState(false);
+    const [hasPrevPage, setHasPrevPage] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const { restoreSession, isAuthenticated } = useAuthStore();
+    
+    // Use refs to track previous values
+    const prevParamsRef = useRef({});
+    const isInitialMount = useRef(true);
 
-    // Debounced fetch for search and filters only
+    // Create a stable debounced function with useCallback
     const debouncedFetchRecipes = useCallback(
         debounce((params, accessToken) => {
             fetchRecipes(params, accessToken);
@@ -41,19 +47,25 @@ const RecipeList = () => {
                 params,
             });
 
-            console.log('API Response:', response.data); // Debug API response
             const recipesData = response.data.recipes?.docs || [];
-            const totalItems = response.data.recipes?.total || 0;
-            const calculatedTotalPages = Math.max(1, Math.ceil(totalItems / params.limit));
+            const totalItems = response.data.recipes?.totalDocs || 0;
+            const calculatedTotalPages = response.data.recipes?.totalPages || 1;
+            const currentPage = response.data.recipes?.page || 1;
+            const hasNext = response.data.recipes?.hasNextPage || false;
+            const hasPrev = response.data.recipes?.hasPrevPage || false;
 
             setRecipes(recipesData);
             setTotalPages(calculatedTotalPages);
-            console.log('Page:', params.page, 'Total Pages:', calculatedTotalPages, 'Total Items:', totalItems); // Debug pagination
+            setPage(currentPage);
+            setHasNextPage(hasNext);
+            setHasPrevPage(hasPrev);
         } catch (err) {
             console.error('API Error:', err.response?.status, err.response?.data);
             setError('Failed to fetch recipes: ' + err.message);
             setRecipes([]);
             setTotalPages(0);
+            setHasNextPage(false);
+            setHasPrevPage(false);
         } finally {
             setLoading(false);
         }
@@ -96,6 +108,13 @@ const RecipeList = () => {
             limit,
         };
 
+        // Skip the initial mount to prevent double fetch
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            fetchRecipes(params, accessToken);
+            return;
+        }
+
         // Use debounced fetch for search/filter changes, immediate fetch for page changes
         if (searchTerm || filters.minRating || filters.maxRating || filters.minViews || filters.maxViews) {
             debouncedFetchRecipes(params, accessToken);
@@ -116,7 +135,6 @@ const RecipeList = () => {
     };
 
     const handlePageChange = (newPage) => {
-        console.log('handlePageChange called with newPage:', newPage); // Debug page change
         if (newPage >= 1 && newPage <= totalPages && newPage !== page) {
             setPage(newPage);
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -125,6 +143,40 @@ const RecipeList = () => {
 
     const handleFormSubmit = (e) => {
         e.preventDefault();
+        // Force a refresh when form is explicitly submitted
+        const accessToken = Cookies.get('accessToken');
+        if (accessToken) {
+            const filterParams = {};
+            if (filters.minRating) filterParams['Average_rating[gte]'] = filters.minRating;
+            if (filters.maxRating) filterParams['Average_rating[lte]'] = filters.maxRating;
+            if (filters.minViews) filterParams['views[gte]'] = filters.minViews;
+            if (filters.maxViews) filterParams['views[lte]'] = filters.maxViews;
+            if (searchTerm) filterParams.search = searchTerm;
+
+            let sortParam = '';
+            switch (activeCategory) {
+                case 'Latest Recipes':
+                    sortParam = '-createdAt';
+                    break;
+                case 'Most Popular Recipes':
+                    sortParam = '-views';
+                    break;
+                case 'Top Rated Recipes':
+                    sortParam = '-Average_rating';
+                    break;
+                default:
+                    sortParam = '-createdAt';
+            }
+
+            const params = {
+                ...filterParams,
+                sort: sortParam,
+                page,
+                limit,
+            };
+            
+            fetchRecipes(params, accessToken);
+        }
     };
 
     const toggleSidebar = () => {
@@ -135,6 +187,9 @@ const RecipeList = () => {
     const getPaginationItems = () => {
         const maxVisiblePages = 5;
         const items = [];
+        
+        if (totalPages <= 1) return items;
+        
         let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
         let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
@@ -142,31 +197,52 @@ const RecipeList = () => {
             startPage = Math.max(1, endPage - maxVisiblePages + 1);
         }
 
-        items.push({ type: 'page', number: 1, label: '1' });
+        // Always show first page
+        if (startPage > 1) {
+            items.push({ type: 'page', number: 1, label: '1' });
+        }
 
+        // Add ellipsis if needed
         if (startPage > 2) {
             items.push({ type: 'ellipsis', label: '...' });
         }
 
+        // Add page numbers
         for (let i = startPage; i <= endPage; i++) {
-            if (i !== 1 && i !== totalPages) {
-                items.push({ type: 'page', number: i, label: i.toString() });
-            }
+            items.push({ type: 'page', number: i, label: i.toString() });
         }
 
+        // Add ellipsis if needed
         if (endPage < totalPages - 1) {
             items.push({ type: 'ellipsis', label: '...' });
         }
 
-        if (totalPages !== 1) {
+        // Always show last page if different from current end
+        if (endPage < totalPages) {
             items.push({ type: 'page', number: totalPages, label: totalPages.toString() });
         }
 
         return items;
     };
 
-    if (loading) return <div className="text-center text-white py-10">Loading...</div>;
-    if (error) return <div className="text-center text-red-500 py-10">{error}</div>;
+    // Add a loading skeleton for better UX
+    const renderSkeleton = () => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Array.from({ length: 12 }).map((_, index) => (
+                <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
+                    <div className="h-48 bg-gray-300"></div>
+                    <div className="p-4">
+                        <div className="h-6 bg-gray-300 rounded mb-2"></div>
+                        <div className="h-4 bg-gray-300 rounded w-3/4 mb-4"></div>
+                        <div className="flex justify-between">
+                            <div className="h-4 bg-gray-300 rounded w-1/4"></div>
+                            <div className="h-4 bg-gray-300 rounded w-1/4"></div>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
 
     const categories = [
         { title: 'Latest Recipes' },
@@ -222,6 +298,9 @@ const RecipeList = () => {
                         value={filters.minRating}
                         onChange={handleFilterChange}
                         className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        min="0"
+                        max="5"
+                        step="0.1"
                     />
                     <input
                         type="number"
@@ -230,6 +309,9 @@ const RecipeList = () => {
                         value={filters.maxRating}
                         onChange={handleFilterChange}
                         className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        min="0"
+                        max="5"
+                        step="0.1"
                     />
                     <input
                         type="number"
@@ -238,6 +320,7 @@ const RecipeList = () => {
                         value={filters.minViews}
                         onChange={handleFilterChange}
                         className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        min="0"
                     />
                     <input
                         type="number"
@@ -246,7 +329,14 @@ const RecipeList = () => {
                         value={filters.maxViews}
                         onChange={handleFilterChange}
                         className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        min="0"
                     />
+                    <button 
+                        type="submit" 
+                        className="w-full py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                    >
+                        Apply Filters
+                    </button>
                 </form>
             </div>
 
@@ -272,80 +362,88 @@ const RecipeList = () => {
                 </form>
 
                 {/* Recipe Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {recipes.length > 0 ? (
-                        recipes.map((recipe) => (
-                            <RecipeCard key={recipe._id} recipe={recipe} />
-                        ))
-                    ) : (
-                        <div className="col-span-full text-center text-gray-500 py-10">
-                            No recipes to display
+                {loading ? (
+                    renderSkeleton()
+                ) : error ? (
+                    <div className="text-center text-red-500 py-10">{error}</div>
+                ) : (
+                    <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {recipes.length > 0 ? (
+                                recipes.map((recipe) => (
+                                    <RecipeCard key={recipe._id} recipe={recipe} />
+                                ))
+                            ) : (
+                                <div className="col-span-full text-center text-gray-500 py-10">
+                                    No recipes to display
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
 
-                {/* Pagination */}
-                {totalPages > 0 && (
-                    <div className="flex justify-center items-center mt-8 space-x-2">
-                        {/* First Page */}
-                        <button
-                            onClick={() => handlePageChange(1)}
-                            disabled={page === 1}
-                            className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-orange-500 hover:text-white transition-colors"
-                            aria-label="First page"
-                        >
-                            First
-                        </button>
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="flex justify-center items-center mt-8 space-x-2">
+                                {/* First Page */}
+                                <button
+                                    onClick={() => handlePageChange(1)}
+                                    disabled={page === 1 || !hasPrevPage}
+                                    className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-orange-500 hover:text-white transition-colors"
+                                    aria-label="First page"
+                                >
+                                    First
+                                </button>
 
-                        {/* Previous Page */}
-                        <button
-                            onClick={() => handlePageChange(page - 1)}
-                            disabled={page <= 1}
-                            className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-orange-500 hover:text-white transition-colors"
-                            aria-label="Previous page"
-                        >
-                            Prev
-                        </button>
+                                {/* Previous Page */}
+                                <button
+                                    onClick={() => handlePageChange(page - 1)}
+                                    disabled={page <= 1 || !hasPrevPage}
+                                    className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-orange-500 hover:text-white transition-colors"
+                                    aria-label="Previous page"
+                                >
+                                    Prev
+                                </button>
 
-                        {/* Page Numbers and Ellipsis */}
-                        {getPaginationItems().map((item, index) => (
-                            <button
-                                key={`${item.type}-${item.label}-${index}`}
-                                onClick={() => item.type === 'page' && handlePageChange(item.number)}
-                                disabled={item.type === 'ellipsis' || page === item.number}
-                                className={`px-3 py-2 rounded-lg transition-colors ${
-                                    item.type === 'ellipsis'
-                                        ? 'bg-transparent text-gray-700 cursor-default'
-                                        : page === item.number
-                                        ? 'bg-orange-500 text-white'
-                                        : 'bg-gray-200 text-gray-700 hover:bg-orange-500 hover:text-white'
-                                }`}
-                                aria-label={item.type === 'page' ? `Page ${item.label}` : undefined}
-                            >
-                                {item.label}
-                            </button>
-                        ))}
+                                {/* Page Numbers and Ellipsis */}
+                                {getPaginationItems().map((item, index) => (
+                                    <button
+                                        key={`${item.type}-${item.label}-${index}`}
+                                        onClick={() => item.type === 'page' && handlePageChange(item.number)}
+                                        disabled={item.type === 'ellipsis' || page === item.number}
+                                        className={`px-3 py-2 rounded-lg transition-colors ${
+                                            item.type === 'ellipsis'
+                                                ? 'bg-transparent text-gray-700 cursor-default'
+                                                : page === item.number
+                                                ? 'bg-orange-500 text-white'
+                                                : 'bg-gray-200 text-gray-700 hover:bg-orange-500 hover:text-white'
+                                        }`}
+                                        aria-label={item.type === 'page' ? `Page ${item.label}` : undefined}
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
 
-                        {/* Next Page */}
-                        <button
-                            onClick={() => handlePageChange(page + 1)}
-                            disabled={page >= totalPages}
-                            className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-orange-500 hover:text-white transition-colors"
-                            aria-label="Next page"
-                        >
-                            Next
-                        </button>
+                                {/* Next Page */}
+                                <button
+                                    onClick={() => handlePageChange(page + 1)}
+                                    disabled={page >= totalPages || !hasNextPage}
+                                    className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-orange-500 hover:text-white transition-colors"
+                                    aria-label="Next page"
+                                >
+                                    Next
+                                </button>
 
-                        {/* Last Page */}
-                        <button
-                            onClick={() => handlePageChange(totalPages)}
-                            disabled={page >= totalPages}
-                            className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-orange-500 hover:text-white transition-colors"
-                            aria-label="Last page"
-                        >
-                            Last
-                        </button>
-                    </div>
+                                {/* Last Page */}
+                                <button
+                                    onClick={() => handlePageChange(totalPages)}
+                                    disabled={page >= totalPages || !hasNextPage}
+                                    className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-orange-500 hover:text-white transition-colors"
+                                    aria-label="Last page"
+                                >
+                                    Last
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>
