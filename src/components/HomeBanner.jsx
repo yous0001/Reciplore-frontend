@@ -21,8 +21,6 @@ export default function HomeBanner() {
         const fetchBanner = async () => {
             try {
                 const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/banner/web_home`);
-                console.log('Banner API Response:', response.data); // Debug log
-                // Check for both 'success' and 'sucess' to handle typo
                 if (response.data.success || response.data.sucess) {
                     setBanner(response.data.banners);
                 } else {

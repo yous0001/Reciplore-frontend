@@ -13,7 +13,6 @@ export default function HalfBanner({ bannerName, header, paragraph ,classnames})
         const fetchBanner = async () => {
             try {
                 const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/banner/${bannerName}`);
-                console.log('Banner API Response:', response.data);
                 if (response.data.success || response.data.sucess) {
                     setBanner(response.data.banners);
                 } else {

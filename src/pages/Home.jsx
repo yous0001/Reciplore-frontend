@@ -18,10 +18,11 @@ const Home = () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/banner/web_home`);
         console.log('API response:', response);
-        if (response.data.sucess) {
+        const ok = response.data?.success;
+        if (ok) {
           setBanner(response.data.banners);
         } else {
-          setError('Failed to load banner data');
+          setError(`Failed to load banner data: ${response.data?.message || 'Invalid response'}`);
         }
       } catch (err) {
         console.error('Error fetching banner:', err);
