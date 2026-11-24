@@ -14,7 +14,7 @@ const CategorySlider = () => {
         try {
             const response = await axios.get(`${API_URL}/category/`, {
                 headers: getAuthHeaders(),
-                timeout: 10000,
+                timeout: 5000,
             });
             const categoriesData = response.data.categories || [];
             setCategories(categoriesData);
