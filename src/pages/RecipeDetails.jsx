@@ -1,357 +1,465 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { FaHeart, FaRegHeart, FaStar } from 'react-icons/fa';
-import { motion } from 'framer-motion';
+import { ArrowLeft, Eye, User, Calendar, PlayCircle, ShoppingBag, ChevronRight, MessageSquare } from 'lucide-react';
 import slugify from 'slugify';
 import { API_URL, getAuthHeaders } from '../store/authStore';
+import { ErrorState } from '../components/ui/StatusState';
+
+const FALLBACK_RECIPE_IMG =
+  'https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&w=1200&q=80';
+const FALLBACK_ING_IMG =
+  'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=120&q=80';
 
 const RecipeDetails = () => {
-    const { slug } = useParams();
-    const navigate = useNavigate();
-    const [recipe, setRecipe] = useState(null);
-    const [isFavourite, setIsFavourite] = useState(false);
-    const [reviews, setReviews] = useState([]);
-    const [newReview, setNewReview] = useState({ rate: 0, comment: '' });
-    const [loading, setLoading] = useState(true);
-    const [toggleLoading, setToggleLoading] = useState(false);
-    const [reviewLoading, setReviewLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [reviewError, setReviewError] = useState(null);
+  const { slug } = useParams();
+  const navigate = useNavigate();
+  const [recipe, setRecipe] = useState(null);
+  const [isFavourite, setIsFavourite] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [newReview, setNewReview] = useState({ rate: 0, comment: '' });
+  const [hoverRating, setHoverRating] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [toggleLoading, setToggleLoading] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-    useEffect(() => {
-        const fetchRecipeAndFavorites = async () => {
-            setLoading(true);
-            setError(null);
+  const fetchRecipeAndFavorites = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const headers = getAuthHeaders();
+      const recipeResponse = await axios.get(`${API_URL}/recipe/get`, {
+        params: { slug },
+        headers,
+      });
+      const fetchedRecipe = recipeResponse.data?.recipe;
+      setRecipe(fetchedRecipe);
 
-            try {
-                const headers = getAuthHeaders();
-                // Fetch recipe details
-                const recipeResponse = await axios.get(`${API_URL}/recipe/get`, {
-                    params: { slug },
-                    headers,
-                });
-                const fetchedRecipe = recipeResponse.data.recipe;
-                setRecipe(fetchedRecipe);
+      if (fetchedRecipe?._id) {
+        const [reviewsRes, favRes] = await Promise.all([
+          axios.get(`${API_URL}/review/`, { params: { recipeId: fetchedRecipe._id }, headers }).catch(() => null),
+          headers.accessToken
+            ? axios.get(`${API_URL}/auth/get-favourite`, { headers }).catch(() => null)
+            : Promise.resolve(null),
+        ]);
 
-                // Fetch reviews (viewable by anyone)
-                if (fetchedRecipe?._id) {
-                    try {
-                        const reviewsResponse = await axios.get(`${API_URL}/review/`, {
-                            params: { recipeId: fetchedRecipe._id },
-                            headers,
-                        });
-                        setReviews(reviewsResponse.data.reviews || []);
-                    } catch (revErr) {
-                        console.warn('Could not load reviews:', revErr.message);
-                    }
-                }
-
-                // Favorite status
-                if (headers.accessToken && fetchedRecipe?._id) {
-                    try {
-                        const favoritesResponse = await axios.get(`${API_URL}/auth/get-favourite`, {
-                            headers,
-                        });
-                        const favorites = favoritesResponse.data.recipes?.docs || [];
-                        setIsFavourite(favorites.some((fav) => fav._id === fetchedRecipe._id));
-                    } catch {
-                        setIsFavourite(fetchedRecipe.isFavourite || false);
-                    }
-                } else {
-                    setIsFavourite(fetchedRecipe?.isFavourite || false);
-                }
-            } catch (err) {
-                console.error('API Error in RecipeDetails:', err.message);
-                setError('Failed to fetch recipe details: ' + (err.response?.data?.message || err.message));
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchRecipeAndFavorites();
-    }, [slug]);
-
-    const handleToggleFavourite = async () => {
-        setError(null);
-        setToggleLoading(true);
-        const previousFavouriteState = isFavourite;
-        setIsFavourite(!isFavourite); // Optimistic update
-
-        const authHeaders = getAuthHeaders();
-        if (!authHeaders.accessToken) {
-            setError('Please log in to favorite recipes.');
-            toast.error('Please log in to favorite recipes.', { position: 'top-right', autoClose: 3000 });
-            setIsFavourite(previousFavouriteState);
-            setToggleLoading(false);
-            return;
+        if (reviewsRes?.data?.reviews) {
+          setReviews(reviewsRes.data.reviews);
         }
-
-        try {
-            const response = await axios.post(
-                `${API_URL}/auth/toggle-favourite/${recipe._id}`,
-                {},
-                { headers: authHeaders }
-            );
-            setIsFavourite(response.data.message?.includes('added'));
-            toast.success(response.data.message, { position: 'top-right', autoClose: 3000 });
-        } catch (err) {
-            console.error('Toggle Favourite Error:', err.message);
-            setError('Failed to toggle favorite: ' + (err.response?.data?.message || err.message));
-            toast.error('Failed to toggle favorite: ' + (err.response?.data?.message || err.message), { position: 'top-right', autoClose: 3000 });
-            setIsFavourite(previousFavouriteState);
-        } finally {
-            setToggleLoading(false);
+        if (favRes?.data?.recipes?.docs) {
+          setIsFavourite(favRes.data.recipes.docs.some((fav) => fav._id === fetchedRecipe._id));
+        } else {
+          setIsFavourite(fetchedRecipe.isFavourite || false);
         }
-    };
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to fetch recipe details');
+    } finally {
+      setLoading(false);
+    }
+  }, [slug]);
 
-    const handleReviewSubmit = async (e) => {
-        e.preventDefault();
-        setReviewError(null);
-        setReviewLoading(true);
+  useEffect(() => {
+    fetchRecipeAndFavorites();
+  }, [fetchRecipeAndFavorites]);
 
-        const authHeaders = getAuthHeaders();
-        if (!authHeaders.accessToken) {
-            setReviewError('Please log in to submit a review.');
-            toast.error('Please log in to submit a review.', { position: 'top-right', autoClose: 3000 });
-            setReviewLoading(false);
-            return;
-        }
+  const directionSteps = useMemo(() => {
+    if (!recipe?.directions) return [];
+    const raw = recipe.directions
+      .split(/\r?\n+/)
+      .map((line) => line.replace(/^\s*(step\s*\d+[:.]?|\d+[.)])\s*/i, '').trim())
+      .filter(Boolean);
+    return raw.length > 0 ? raw : [recipe.directions];
+  }, [recipe?.directions]);
 
-        if (newReview.rate < 1 || newReview.rate > 5) {
-            setReviewError('Rating must be between 1 and 5.');
-            toast.error('Rating must be between 1 and 5.', { position: 'top-right', autoClose: 3000 });
-            setReviewLoading(false);
-            return;
-        }
+  const handleToggleFavourite = async () => {
+    const authHeaders = getAuthHeaders();
+    if (!authHeaders.accessToken) {
+      toast.error('Please log in to save favorite recipes.', { position: 'top-right', autoClose: 3000 });
+      return;
+    }
 
-        try {
-            const response = await axios.post(
-                `${API_URL}/review/add`,
-                {
-                    rate: newReview.rate,
-                    comment: newReview.comment,
-                    recipeId: recipe._id,
-                },
-                { headers: authHeaders }
-            );
-            setReviews((prev) => [response.data.review, ...prev]);
-            setNewReview({ rate: 0, comment: '' });
-            toast.success(response.data.message || 'Review added!', { position: 'top-right', autoClose: 3000 });
-        } catch (err) {
-            console.error('Review Submit Error:', err.message);
-            setReviewError(err.response?.data?.message || 'Failed to submit review');
-            toast.error(err.response?.data?.message || 'Failed to submit review', { position: 'top-right', autoClose: 3000 });
-        } finally {
-            setReviewLoading(false);
-        }
-    };
+    setToggleLoading(true);
+    const prev = isFavourite;
+    setIsFavourite(!prev);
 
-    if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-white">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
-        </div>
-    );
-    if (error || !recipe) return <div className="text-center text-red-500 py-16 text-lg font-medium">{error || 'Recipe not found'}</div>;
+    try {
+      const response = await axios.post(
+        `${API_URL}/auth/toggle-favourite/${recipe._id}`,
+        {},
+        { headers: authHeaders }
+      );
+      setIsFavourite(response.data.message?.toLowerCase().includes('added'));
+      toast.success(response.data.message, { position: 'top-right', autoClose: 2500 });
+    } catch (err) {
+      setIsFavourite(prev);
+      toast.error(err.response?.data?.message || 'Failed to update favorites', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+    } finally {
+      setToggleLoading(false);
+    }
+  };
 
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    const authHeaders = getAuthHeaders();
+    if (!authHeaders.accessToken) {
+      toast.error('Please log in to submit a review.', { position: 'top-right', autoClose: 3000 });
+      return;
+    }
+    if (newReview.rate < 1 || newReview.rate > 5) {
+      toast.error('Please select a star rating between 1 and 5.', { position: 'top-right', autoClose: 3000 });
+      return;
+    }
+
+    setReviewLoading(true);
+    try {
+      const response = await axios.post(
+        `${API_URL}/review/add`,
+        {
+          rate: newReview.rate,
+          comment: newReview.comment,
+          recipeId: recipe._id,
+        },
+        { headers: authHeaders }
+      );
+      if (response.data?.review) {
+        setReviews((prev) => [response.data.review, ...prev]);
+      }
+      setNewReview({ rate: 0, comment: '' });
+      toast.success(response.data.message || 'Review submitted!', { position: 'top-right', autoClose: 2500 });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to submit review', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
+  if (loading) {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-orange-200 via-orange-100 to-white overflow-hidden">
-            <div className="container mx-auto px-4 lg:px-6 py-16">
-                <button
-                    onClick={() => navigate(-1)}
-                    className="mb-8 inline-flex items-center px-5 py-3 bg-orange-600 text-white font-bold rounded-xl shadow-lg hover:bg-orange-700 transition-all duration-300 transform hover:-translate-y-1"
-                >
-                    ← Back
-                </button>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                    {/* Hero Image and Rating */}
-                    <div className="lg:col-span-2 bg-white/90 rounded-xl shadow-2xl overflow-hidden relative backdrop-blur-sm">
-                        <div className="absolute inset-0 bg-gradient-to-t from-orange-600/30 to-transparent"></div>
-                        <img
-                            src={recipe.Images?.URLs?.[0]?.secure_url || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&w=1000&q=80'}
-                            alt={recipe.name}
-                            className="w-full h-96 object-cover relative z-10"
-                            onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&w=1000&q=80'; }}
-                        />
-                        <div className="absolute top-6 left-6 bg-orange-500 text-white text-xl font-extrabold px-5 py-2 rounded-full shadow-lg z-20 animate-pulse-once">
-                            {Math.round(recipe.Average_rating || 0)} ⭐
-                        </div>
-                        <button
-                            onClick={handleToggleFavourite}
-                            disabled={toggleLoading}
-                            className={`absolute top-6 right-6 text-3xl text-orange-500 transition-all duration-300 z-20 ${
-                                toggleLoading ? 'opacity-50 cursor-not-allowed' : 'hover:text-orange-600'
-                            }`}
-                        >
-                            {isFavourite ? <FaHeart /> : <FaRegHeart />}
-                        </button>
-                        <div className="p-8 relative z-10">
-                            <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 drop-shadow-md">{recipe.name}</h1>
-                            <p className="text-gray-700 text-lg md:text-xl leading-relaxed">{recipe.description}</p>
-                        </div>
-                    </div>
-
-                    {/* Sidebar with Details */}
-                    <div className="lg:col-span-1 bg-white/90 rounded-xl shadow-2xl p-8 backdrop-blur-sm">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-6 border-b-2 border-orange-300 pb-3">Details</h2>
-                        <div className="space-y-6">
-                            <p className="text-gray-700 text-lg"><span className="font-semibold text-orange-600">Category:</span> {recipe.category?.name || 'General'}</p>
-                            <p className="text-gray-700 text-lg"><span className="font-semibold text-orange-600">Country:</span>
-                                <span className="bg-orange-200 text-orange-800 text-base font-medium px-4 py-2 rounded-full ml-3 shadow-inner">
-                                    {recipe.country?.name || 'International'}
-                                </span>
-                            </p>
-                            <p className="text-gray-700 text-lg"><span className="font-semibold text-orange-600">Views:</span> {recipe.views || 0}</p>
-                            <p className="text-gray-700 text-lg"><span className="font-semibold text-orange-600">Created By:</span> {recipe.createdBy?.username || 'Chef'}</p>
-                            <p className="text-gray-700 text-lg"><span className="font-semibold text-orange-600">Created At:</span> {recipe.createdAt ? new Date(recipe.createdAt).toLocaleDateString() : 'Recently'}</p>
-                        </div>
-                    </div>
-
-                    {/* Directions (Large Column) */}
-                    <div className="lg:col-span-2 bg-white/90 rounded-xl shadow-2xl p-8 mt-10 lg:mt-0 backdrop-blur-sm">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-6 border-b-2 border-orange-300 pb-3">Directions</h2>
-                        <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-line">{recipe.directions}</p>
-                        {recipe.videoLink && (
-                            <a href={recipe.videoLink} target="_blank" rel="noopener noreferrer" className="mt-6 inline-block px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg shadow-md hover:bg-orange-600 transition-all duration-300">
-                                Watch Video Tutorial
-                            </a>
-                        )}
-                    </div>
-
-                    {/* Ingredients (Small Column, Vertical) */}
-                    <div className="lg:col-span-1 bg-white/90 rounded-xl shadow-2xl p-8 mt-10 backdrop-blur-sm">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-6 border-b-2 border-orange-300 pb-3">Ingredients</h2>
-                        <div className="space-y-6">
-                            {recipe.ingredients.map((ing, index) => (
-                                <div
-                                    key={ing._id}
-                                    className="flex items-center space-x-4 p-3 hover:bg-orange-50 rounded-lg transition-all duration-300 cursor-pointer"
-                                    onClick={() => {
-                                        console.log('Clicked ingredient:', ing.ingredient);
-                                        navigate(`/ingredient/${ing.ingredient?.slug || slugify(ing.ingredient?.name, {
-                                            replacement: "_",
-                                            lower: true,
-                                        }) || 'unknown'}`);
-                                    }}
-                                >
-                                    <img
-                                        src={ing.ingredient?.image?.secure_url || ing.image?.secure_url || 'https://via.placeholder.com/64x64'}
-                                        alt={ing.ingredient?.name || ing.name || 'Unknown Ingredient'}
-                                        className="w-16 h-16 object-cover rounded-full border-2 border-orange-200"
-                                        onError={(e) => { e.target.src = 'https://via.placeholder.com/64x64'; }}
-                                    />
-                                    <div>
-                                        <p className="text-gray-700 text-lg">{ing.amount} {ing.ingredient?.name || ing.name || 'Unknown'}</p>
-                                        <p className="text-gray-500 text-sm">(${ing.ingredient?.appliedPrice?.toFixed(2) || '0.00'})</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Reviews Section */}
-                    <div className="lg:col-span-3 bg-white/90 rounded-xl shadow-2xl p-8 mt-10 backdrop-blur-sm">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-6 border-b-2 border-orange-300 pb-3">Reviews</h2>
-                        {reviews.length === 0 ? (
-                            <p className="text-gray-600 text-lg">No reviews yet. Be the first to share your thoughts!</p>
-                        ) : (
-                            <motion.div
-                                className="space-y-6"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ duration: 0.6 }}
-                            >
-                                {reviews.map((review) => (
-                                    <div
-                                        key={review._id}
-                                        className="flex items-start space-x-4 p-4 bg-orange-50 rounded-lg"
-                                    >
-                                        <img
-                                            src={review.userID?.profileImage?.secure_url || 'https://via.placeholder.com/40x40'}
-                                            alt={review.userID?.username || 'User'}
-                                            className="w-10 h-10 rounded-full object-cover border-2 border-orange-200"
-                                            onError={(e) => { e.target.src = 'https://via.placeholder.com/40x40'; }}
-                                        />
-                                        <div className="flex-1">
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-lg font-semibold text-gray-900">{review.userID?.username || 'Anonymous'}</p>
-                                                <div className="flex items-center text-orange-500">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <FaStar
-                                                            key={i}
-                                                            className={i < Math.round(review.rate) ? 'text-orange-500' : 'text-gray-300'}
-                                                        />
-                                                    ))}
-                                                    <span className="ml-2 text-gray-600 text-sm">{review.rate.toFixed(1)}</span>
-                                                </div>
-                                            </div>
-                                            <p className="text-gray-700 text-base mt-2">{review.comment}</p>
-                                            <p className="text-gray-500 text-sm mt-1">
-                                                {new Date(review.createdAt).toLocaleDateString()}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </motion.div>
-                        )}
-
-                        {/* Review Form */}
-                        <motion.div
-                            className="mt-8"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6, delay: 0.2 }}
-                        >
-                            <h3 className="text-2xl font-semibold text-gray-900 mb-4">Add Your Review</h3>
-                            <form onSubmit={handleReviewSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-gray-700 text-sm font-medium mb-1">Rating (1–5)</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        max="5"
-                                        step="0.1"
-                                        value={newReview.rate || ''}
-                                        onChange={(e) => setNewReview({ ...newReview, rate: parseFloat(e.target.value) })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                        placeholder="Enter rating"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-gray-700 text-sm font-medium mb-1">Comment</label>
-                                    <textarea
-                                        value={newReview.comment}
-                                        onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                        rows="4"
-                                        placeholder="Share your thoughts..."
-                                        required
-                                    ></textarea>
-                                </div>
-                                <button
-                                    type="submit"
-                                    disabled={reviewLoading}
-                                    className={`px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg shadow-md transition-all duration-300 ${
-                                        reviewLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-orange-600 hover:-translate-y-1'
-                                    }`}
-                                >
-                                    {reviewLoading ? 'Submitting...' : 'Submit Review'}
-                                </button>
-                                {reviewError && (
-                                    <p className="text-red-500 text-sm mt-2">{reviewError}</p>
-                                )}
-                            </form>
-                        </motion.div>
-                    </div>
-                </div>
-                {error && (
-                    <div className="text-center text-red-500 py-4">{error}</div>
-                )}
-            </div>
+      <div className="min-h-screen bg-[#FAF9F6] py-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 animate-pulse">
+          <div className="h-9 w-24 bg-stone-200 rounded-xl" />
+          <div className="h-[420px] bg-stone-200 rounded-3xl" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 h-80 bg-stone-200 rounded-2xl" />
+            <div className="h-80 bg-stone-200 rounded-2xl" />
+          </div>
         </div>
+      </div>
     );
+  }
+
+  if (error || !recipe) {
+    return (
+      <div className="min-h-screen bg-[#FAF9F6] py-16 px-4">
+        <ErrorState message={error || 'Recipe not found'} onRetry={fetchRecipeAndFavorites} />
+      </div>
+    );
+  }
+
+  const heroImage = recipe.Images?.URLs?.[0]?.secure_url || FALLBACK_RECIPE_IMG;
+  const avgRating = Number(recipe.Average_rating || 0).toFixed(1);
+
+  return (
+    <div className="min-h-screen bg-[#FAF9F6] py-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        {/* Top Back Action */}
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-stone-700 bg-white border border-stone-200 rounded-xl shadow-xs hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition-all cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Recipes
+        </button>
+
+        {/* Editorial Hero Card */}
+        <div className="bg-white rounded-3xl border border-stone-200/80 shadow-xl shadow-stone-900/5 overflow-hidden">
+          <div className="relative h-80 sm:h-[420px] w-full bg-stone-200">
+            <img
+              src={heroImage}
+              alt={recipe.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.src = FALLBACK_RECIPE_IMG;
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-stone-950/90 via-stone-950/35 to-transparent" />
+
+            {/* Top Floating Actions */}
+            <div className="absolute top-5 left-5 right-5 flex items-center justify-between">
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md text-stone-900 text-sm font-bold shadow-md">
+                <FaStar className="text-amber-400 w-4 h-4" />
+                <span>{avgRating}</span>
+                <span className="text-stone-400 font-normal">({reviews.length})</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleToggleFavourite}
+                disabled={toggleLoading}
+                aria-label={isFavourite ? 'Remove from favorites' : 'Save to favorites'}
+                className="w-11 h-11 rounded-full bg-white/95 backdrop-blur-md flex items-center justify-center shadow-md hover:scale-105 transition-transform cursor-pointer disabled:opacity-50"
+              >
+                {isFavourite ? (
+                  <FaHeart className="text-orange-500 w-5 h-5" />
+                ) : (
+                  <FaRegHeart className="text-stone-700 w-5 h-5" />
+                )}
+              </button>
+            </div>
+
+            {/* Bottom Hero Title & Metadata */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 text-white space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-3 py-1 rounded-full bg-orange-500 text-white text-xs font-bold uppercase tracking-wider capitalize">
+                  {recipe.category?.name?.replace(/_/g, ' ') || 'Recipe'}
+                </span>
+                <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-semibold">
+                  {recipe.country?.name || 'International'}
+                </span>
+              </div>
+              <h1 className="text-3xl sm:text-5xl font-display font-bold leading-tight">
+                {recipe.name}
+              </h1>
+            </div>
+          </div>
+
+          {/* Metadata Strip */}
+          <div className="px-6 sm:px-10 py-5 bg-stone-50/70 border-t border-stone-100 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-6 text-sm text-stone-600">
+              <span className="inline-flex items-center gap-1.5">
+                <User className="w-4 h-4 text-orange-500" />
+                <strong className="text-stone-800">{recipe.createdBy?.username || 'Chef'}</strong>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Eye className="w-4 h-4 text-orange-500" />
+                <span>{(recipe.views || 0).toLocaleString()} views</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-orange-500" />
+                <span>{recipe.createdAt ? new Date(recipe.createdAt).toLocaleDateString() : 'Recently'}</span>
+              </span>
+            </div>
+
+            {recipe.videoLink && (
+              <a
+                href={recipe.videoLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-all"
+              >
+                <PlayCircle className="w-4 h-4" />
+                Watch Video Tutorial
+              </a>
+            )}
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          {/* Left Column: Directions + Tags + Reviews */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Directions */}
+            <section className="bg-white rounded-3xl border border-stone-200/80 shadow-xs p-6 sm:p-8">
+              <h2 className="text-2xl font-display font-bold text-stone-900 mb-6">
+                Preparation Steps
+              </h2>
+              <ol className="space-y-4">
+                {directionSteps.map((step, idx) => (
+                  <li
+                    key={idx}
+                    className="flex gap-4 p-4 rounded-2xl bg-stone-50/80 border border-stone-100"
+                  >
+                    <span className="w-8 h-8 rounded-xl bg-orange-100 text-orange-700 font-bold text-sm flex items-center justify-center shrink-0">
+                      {idx + 1}
+                    </span>
+                    <p className="text-stone-700 text-base leading-relaxed pt-0.5">{step}</p>
+                  </li>
+                ))}
+              </ol>
+
+              {recipe.tags?.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-stone-100 flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-stone-400 mr-1">
+                    Tags:
+                  </span>
+                  {recipe.tags.map((tag, i) => (
+                    <span
+                      key={i}
+                      className="px-3 py-1 rounded-full bg-stone-100 text-stone-600 text-xs font-medium"
+                    >
+                      #{tag.trim()}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Reviews Section */}
+            <section className="bg-white rounded-3xl border border-stone-200/80 shadow-xs p-6 sm:p-8 space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-display font-bold text-stone-900 flex items-center gap-2.5">
+                  <MessageSquare className="w-5 h-5 text-orange-500" />
+                  Reviews ({reviews.length})
+                </h2>
+              </div>
+
+              {/* Add Review Form */}
+              <form
+                onSubmit={handleReviewSubmit}
+                className="p-5 rounded-2xl bg-orange-50/50 border border-orange-100 space-y-4"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-sm font-semibold text-stone-800">Rate this recipe</span>
+                  <div className="flex items-center gap-1.5">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onMouseEnter={() => setHoverRating(star)}
+                        onMouseLeave={() => setHoverRating(0)}
+                        onClick={() => setNewReview((prev) => ({ ...prev, rate: star }))}
+                        className="p-1 cursor-pointer transition-transform hover:scale-110"
+                        aria-label={`Rate ${star} stars`}
+                      >
+                        <FaStar
+                          className={`w-5 h-5 ${
+                            star <= (hoverRating || newReview.rate)
+                              ? 'text-amber-400'
+                              : 'text-stone-300'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <textarea
+                  rows={3}
+                  value={newReview.comment}
+                  onChange={(e) => setNewReview((prev) => ({ ...prev, comment: e.target.value }))}
+                  placeholder="Share your cooking tips or how it turned out..."
+                  className="w-full p-3.5 bg-white border border-stone-200 rounded-xl text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                />
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={reviewLoading}
+                    className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    {reviewLoading ? 'Submitting...' : 'Post Review'}
+                  </button>
+                </div>
+              </form>
+
+              {/* Review List */}
+              {reviews.length === 0 ? (
+                <p className="text-sm text-stone-500 text-center py-6">
+                  No reviews yet. Be the first to share your thoughts!
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {reviews.map((rev) => (
+                    <div
+                      key={rev._id}
+                      className="p-4 rounded-2xl border border-stone-100 bg-stone-50/50 space-y-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-bold text-xs flex items-center justify-center uppercase">
+                            {(rev.userID?.username || 'U')[0]}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-stone-900">
+                              {rev.userID?.username || 'Community Member'}
+                            </p>
+                            {rev.createdAt && (
+                              <p className="text-xs text-stone-400">
+                                {new Date(rev.createdAt).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-bold">
+                          <FaStar className="w-3.5 h-3.5 text-amber-400" />
+                          {rev.rate}
+                        </div>
+                      </div>
+                      {rev.comment && (
+                        <p className="text-sm text-stone-700 leading-relaxed pl-10">{rev.comment}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+
+          {/* Right Column: Sticky Ingredients Shop Card */}
+          <aside className="lg:sticky lg:top-24 bg-white rounded-3xl border border-stone-200/80 shadow-xs p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-display font-bold text-stone-900">
+                Ingredients ({recipe.ingredients?.length || 0})
+              </h2>
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-orange-600">
+                <ShoppingBag className="w-3.5 h-3.5" />
+                Click to shop
+              </span>
+            </div>
+
+            <div className="space-y-2.5">
+              {(recipe.ingredients || []).map((ing, index) => {
+                const ingObj = ing.ingredient || {};
+                const ingName = ingObj.name || ing.name || 'Ingredient';
+                const ingSlug =
+                  ingObj.slug ||
+                  slugify(ingName, { replacement: '_', lower: true }) ||
+                  'unknown';
+                const ingImg = ingObj.image?.secure_url || ing.image?.secure_url || FALLBACK_ING_IMG;
+
+                return (
+                  <button
+                    key={ing._id || index}
+                    type="button"
+                    onClick={() => navigate(`/ingredient/${ingSlug}`)}
+                    className="w-full flex items-center gap-3 p-2.5 rounded-2xl border border-stone-100 hover:border-orange-200 hover:bg-orange-50/50 transition-all text-left group cursor-pointer"
+                  >
+                    <img
+                      src={ingImg}
+                      alt={ingName}
+                      loading="lazy"
+                      onError={(e) => {
+                        e.target.src = FALLBACK_ING_IMG;
+                      }}
+                      className="w-11 h-11 rounded-xl object-cover bg-stone-100 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-stone-900 truncate group-hover:text-orange-600 transition-colors">
+                        {ingName}
+                      </p>
+                      <p className="text-xs text-stone-500 truncate">{ing.amount || 'As needed'}</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-stone-300 group-hover:text-orange-500 shrink-0" />
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default RecipeDetails;

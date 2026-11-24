@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ShoppingCart, Heart, LogOut, Package, User, Menu, X, ChefHat, ChevronDown } from 'lucide-react';
+import { ShoppingCart, Heart, LogOut, Package, User, Menu, X, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 const navItems = [
@@ -57,13 +57,12 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center gap-4">
           {/* Brand */}
-          <NavLink to="/" className="flex items-center gap-2.5 shrink-0 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
-              <ChefHat className="w-5 h-5" />
-            </div>
-            <span className="text-xl font-display font-bold text-stone-900 tracking-tight">
-              Reciplore
-            </span>
+          <NavLink to="/" className="flex items-center shrink-0 group">
+            <img
+              src="https://res.cloudinary.com/dfdmgqhwa/image/upload/v1740230885/recipesSystem/Reciplore-removebg_xnsmub.png"
+              alt="Reciplore"
+              className="h-12 w-auto object-contain group-hover:scale-105 transition-transform"
+            />
           </NavLink>
 
           {/* Desktop Navigation */}

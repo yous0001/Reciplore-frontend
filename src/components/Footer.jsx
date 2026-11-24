@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Mail, Phone, MapPin, ChefHat, ArrowRight } from 'lucide-react';
+import { Mail, Phone, MapPin, ArrowRight } from 'lucide-react';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -23,13 +23,12 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand */}
           <div className="space-y-4">
-            <Link to="/" className="inline-flex items-center gap-2.5 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20">
-                <ChefHat className="w-5 h-5" />
-              </div>
-              <span className="text-2xl font-display font-bold text-white tracking-tight">
-                Reciplore
-              </span>
+            <Link to="/" className="inline-flex items-center group">
+              <img
+                src="https://res.cloudinary.com/dfdmgqhwa/image/upload/v1740230885/recipesSystem/Reciplore-removebg_xnsmub.png"
+                alt="Reciplore"
+                className="h-14 w-auto object-contain brightness-110 group-hover:scale-105 transition-transform"
+              />
             </Link>
             <p className="text-sm text-stone-400 leading-relaxed">
               Your modern kitchen companion for discovering authentic global recipes, AI meal planning, and shopping fresh culinary ingredients.
