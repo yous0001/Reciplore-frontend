@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import RecipeCard from '../components/RecipeCard';
 import { debounce } from 'lodash';
-import { API_URL, getAuthHeaders } from '../store/authStore';
+import { API_URL, getAuthHeaders, useAuthStore } from '../store/authStore';
 
 // Fallback image URL (replace with your own if needed)
 const FALLBACK_IMAGE = 'https://via.placeholder.com/150?text=Category';

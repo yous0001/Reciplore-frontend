@@ -76,10 +76,8 @@ const Countries = () => {
     };
 
     useEffect(() => {
-        const accessToken = Cookies.get('accessToken');
-
         if (!selectedCountry) {
-            fetchCountries(accessToken);
+            fetchCountries();
         } else {
             const filterParams = {};
             if (filters.minRating) filterParams['Average_rating[gte]'] = filters.minRating;
@@ -112,9 +110,9 @@ const Countries = () => {
             };
 
             if (searchTerm || filters.minRating || filters.maxRating || filters.minViews || filters.maxViews) {
-                debouncedFetchRecipes(params, accessToken);
+                debouncedFetchRecipes(params);
             } else {
-                fetchRecipes(params, accessToken);
+                fetchRecipes(params);
             }
         }
     }, [selectedCountry, activeSort, filters, searchTerm, page, limit, debouncedFetchRecipes]);

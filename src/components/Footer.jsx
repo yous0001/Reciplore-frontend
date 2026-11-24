@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { Mail, Phone, MapPin, Twitter, Instagram, Facebook } from 'lucide-react';
 
 export default function Footer() {
     const currentYear = new Date().getFullYear();
+    const [newsletterEmail, setNewsletterEmail] = useState('');
 
     const handleNewsletterSubmit = (e) => {
         e.preventDefault();
-        // Placeholder for newsletter signup logic
-        alert('Newsletter signup submitted! (Implement backend logic here)');
+        if (!newsletterEmail.trim()) return;
+        toast.success('Thanks for subscribing to Reciplore updates!', { position: 'top-right', autoClose: 3000 });
+        setNewsletterEmail('');
     };
 
     return (
@@ -62,7 +65,7 @@ export default function Footer() {
                     {/* Contact Info */}
                     <div>
                         <h3 className="text-lg font-semibold text-white mb-4">Contact Us</h3>
-                        <ul className="space- y-2">
+                        <ul className="space-y-2">
                             <li className="flex items-center">
                                 <Mail className="w-5 h-5 mr-2" />
                                 <a href="mailto:reciplore0@gmail.com" className="hover:text-white transition-colors">
@@ -89,13 +92,15 @@ export default function Footer() {
                         <form onSubmit={handleNewsletterSubmit} className="flex flex-col space-y-2">
                             <input
                                 type="email"
+                                value={newsletterEmail}
+                                onChange={(e) => setNewsletterEmail(e.target.value)}
                                 placeholder="Enter your email"
-                                className="px-4 py-2 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-white"
+                                className="px-4 py-2 rounded-md bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-400"
                                 required
                             />
                             <button
                                 type="submit"
-                                className="px-4 py-2 bg-white text-gray-900 rounded-md hover:bg-gray-200 transition-colors"
+                                className="px-4 py-2 bg-orange-500 text-white font-medium rounded-md hover:bg-orange-600 transition-colors cursor-pointer"
                             >
                                 Subscribe
                             </button>

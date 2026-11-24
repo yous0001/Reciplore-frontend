@@ -114,13 +114,6 @@ const Market = () => {
     };
 
     useEffect(() => {
-        const accessToken = Cookies.get('accessToken');
-        if (!accessToken) {
-            setError('please login first to view market');
-            setLoading(false);
-            return;
-        }
-
         const filterParams = {};
         if (filters.minAppliedPrice) filterParams['appliedPrice[gte]'] = filters.minAppliedPrice;
         if (filters.maxAppliedPrice) filterParams['appliedPrice[lte]'] = filters.maxAppliedPrice;
@@ -198,53 +191,49 @@ const Market = () => {
     const handleFormSubmit = (e) => {
         e?.preventDefault();
         setShowFilters(false);
-        
-        // Force a refresh when form is explicitly submitted
-        const accessToken = Cookies.get('accessToken');
-        if (accessToken) {
-            const filterParams = {};
-            if (filters.minAppliedPrice) filterParams['appliedPrice[gte]'] = filters.minAppliedPrice;
-            if (filters.maxAppliedPrice) filterParams['appliedPrice[lte]'] = filters.maxAppliedPrice;
-            if (filters.minAverageRating) filterParams['Average_rating[gte]'] = filters.minAverageRating;
-            if (filters.maxAverageRating) filterParams['Average_rating[lte]'] = filters.maxAverageRating;
-            if (filters.minStock) filterParams['stock[gte]'] = filters.minStock;
-            if (filters.maxStock) filterParams['stock[lte]'] = filters.maxStock;
-            if (filters.minSellings) filterParams['sellings[gte]'] = filters.minSellings;
-            if (filters.maxSellings) filterParams['sellings[lte]'] = filters.maxSellings;
-            if (filters.minDiscountAmount) filterParams['discount.amount[gte]'] = filters.minDiscountAmount;
-            if (filters.maxDiscountAmount) filterParams['discount.amount[lte]'] = filters.maxDiscountAmount;
-            if (searchTerm) filterParams.search = searchTerm;
 
-            let sortParam = '';
-            switch (activeSort) {
-                case 'Lowest Price':
-                    sortParam = 'appliedPrice';
-                    break;
-                case 'Top Rated':
-                    sortParam = '-Average_rating';
-                    break;
-                case 'Most Available':
-                    sortParam = '-stock';
-                    break;
-                case 'Top Selling':
-                    sortParam = '-sellings';
-                    break;
-                case 'Top Discount':
-                    sortParam = '-discount.amount';
-                    break;
-                default:
-                    sortParam = '-appliedPrice';
-            }
+        const filterParams = {};
+        if (filters.minAppliedPrice) filterParams['appliedPrice[gte]'] = filters.minAppliedPrice;
+        if (filters.maxAppliedPrice) filterParams['appliedPrice[lte]'] = filters.maxAppliedPrice;
+        if (filters.minAverageRating) filterParams['Average_rating[gte]'] = filters.minAverageRating;
+        if (filters.maxAverageRating) filterParams['Average_rating[lte]'] = filters.maxAverageRating;
+        if (filters.minStock) filterParams['stock[gte]'] = filters.minStock;
+        if (filters.maxStock) filterParams['stock[lte]'] = filters.maxStock;
+        if (filters.minSellings) filterParams['sellings[gte]'] = filters.minSellings;
+        if (filters.maxSellings) filterParams['sellings[lte]'] = filters.maxSellings;
+        if (filters.minDiscountAmount) filterParams['discount.amount[gte]'] = filters.minDiscountAmount;
+        if (filters.maxDiscountAmount) filterParams['discount.amount[lte]'] = filters.maxDiscountAmount;
+        if (searchTerm) filterParams.search = searchTerm;
 
-            const params = {
-                ...filterParams,
-                sort: sortParam,
-                page,
-                limit,
-            };
-            
-            fetchIngredients(params, accessToken);
+        let sortParam = '';
+        switch (activeSort) {
+            case 'Lowest Price':
+                sortParam = 'appliedPrice';
+                break;
+            case 'Top Rated':
+                sortParam = '-Average_rating';
+                break;
+            case 'Most Available':
+                sortParam = '-stock';
+                break;
+            case 'Top Selling':
+                sortParam = '-sellings';
+                break;
+            case 'Top Discount':
+                sortParam = '-discount.amount';
+                break;
+            default:
+                sortParam = '-appliedPrice';
         }
+
+        const params = {
+            ...filterParams,
+            sort: sortParam,
+            page,
+            limit,
+        };
+
+        fetchIngredients(params);
     };
 
     const clearFilters = () => {

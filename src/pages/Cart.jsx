@@ -143,8 +143,8 @@ const Cart = () => {
             toast.error('Your cart is empty.', { position: 'top-right', autoClose: 3000 });
             return;
         }
-        const accessToken = Cookies.get('accessToken');
-        if (!accessToken) {
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders.accessToken) {
             setError('Please log in to check your order.');
             toast.error('Please log in to check your order.', { position: 'top-right', autoClose: 3000 });
             return;

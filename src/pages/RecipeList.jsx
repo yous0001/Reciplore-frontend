@@ -129,8 +129,6 @@ const RecipeList = () => {
     };
 
     useEffect(() => {
-        const accessToken = Cookies.get('accessToken');
-
         const filterParams = {};
         if (filters.minRating) filterParams['Average_rating[gte]'] = filters.minRating;
         if (filters.maxRating) filterParams['Average_rating[lte]'] = filters.maxRating;
@@ -199,9 +197,6 @@ const RecipeList = () => {
         e?.preventDefault();
         setShowFilters(false);
 
-        // Force a refresh when form is explicitly submitted
-        const accessToken = Cookies.get('accessToken');
-
         const filterParams = {};
         if (filters.minRating) filterParams['Average_rating[gte]'] = filters.minRating;
         if (filters.maxRating) filterParams['Average_rating[lte]'] = filters.maxRating;
@@ -233,7 +228,7 @@ const RecipeList = () => {
             limit,
         };
 
-        fetchRecipes(params, accessToken);
+        fetchRecipes(params);
     };
 
     const clearFilters = () => {

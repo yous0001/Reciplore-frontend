@@ -10,7 +10,7 @@ const navItems = [
     { name: "Categories", to: "/categories" },
     { name: "Countries", to: "/countries" },
     { name: "Chat", to: "/chat" },
-    { name: "diet plan", to: "/diet-plan" },
+    { name: "Diet Plan", to: "/diet-plan" },
 ];
 
 export default function Navbar() {
@@ -53,8 +53,9 @@ export default function Navbar() {
 
     return (
         <>
+        {scrolled && <div className="h-16" />}
         <header
-            className={` w-full z-50 transition-all duration-1500 transform ${scrolled ? 'fixed top-0 translate-y-0 shadow-md bg-white' : '-translate-y-0'}`}
+            className={`w-full z-50 transition-all duration-300 ${scrolled ? 'fixed top-0 left-0 right-0 shadow-md bg-white/95 backdrop-blur-md' : 'bg-white'}`}
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16 items-center">

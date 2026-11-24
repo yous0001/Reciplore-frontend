@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import MainLayout from "./pages/MainLayout";
 import LoadingSpinner from "./components/LoadingSpinner";
+import ErrorFallback from "./components/ErrorFallback";
 
 // Lazy-loaded pages for optimal bundle size and instant initial load
 const Home = lazy(() => import("./pages/Home"));
@@ -19,6 +20,7 @@ const DietPlan = lazy(() => import("./pages/DietPlan"));
 const SearchWithAi = lazy(() => import("./pages/SearchWithAi"));
 const RecommendationDetails = lazy(() => import("./pages/RecommendationDetails"));
 const Favorite = lazy(() => import("./pages/Favorite"));
+const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
 const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
 const Order = lazy(() => import("./pages/Order"));
@@ -45,7 +47,7 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <MainLayout />,
-    errorElement: withSuspense(NotFound),
+    errorElement: <ErrorFallback />,
     children: [
       { index: true, element: withSuspense(Home) },
       { path: "recipes", element: withSuspense(RecipeList) },
@@ -59,9 +61,13 @@ const router = createBrowserRouter([
       { path: "cart", element: withSuspense(Cart) },
       { path: "profile", element: withSuspense(Profile) },
       { path: "diet-plan", element: withSuspense(DietPlan) },
+      { path: "search-ai", element: withSuspense(SearchWithAi) },
       { path: "search-ai/:query", element: withSuspense(SearchWithAi) },
       { path: "recommendation/:name", element: withSuspense(RecommendationDetails) },
       { path: "favourites", element: withSuspense(Favorite) },
+      { path: "favorites", element: withSuspense(Favorite) },
+      { path: "favorite", element: withSuspense(Favorite) },
+      { path: "about", element: withSuspense(About) },
       { path: "contact", element: withSuspense(Contact) },
       { path: "terms-and-conditions", element: withSuspense(TermsAndConditions) },
       { path: "order", element: withSuspense(Order) },
@@ -73,6 +79,7 @@ const router = createBrowserRouter([
   {
     path: "/auth",
     element: withSuspense(AuthLayout),
+    errorElement: <ErrorFallback />,
     children: [
       { index: true, element: withSuspense(Login) },
       { path: "login", element: withSuspense(Login) },
@@ -83,6 +90,8 @@ const router = createBrowserRouter([
       { path: "2fa", element: withSuspense(TwoFactorAuth) },
     ],
   },
+  { path: "/login", element: withSuspense(AuthLayout), children: [{ index: true, element: withSuspense(Login) }] },
+  { path: "/register", element: withSuspense(AuthLayout), children: [{ index: true, element: withSuspense(Register) }] },
 ]);
 
 const AppRouter = () => <RouterProvider router={router} />;
