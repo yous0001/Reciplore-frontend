@@ -5,6 +5,24 @@ import { toast } from "react-toastify";
 
 export const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
+// Automatically retry transient 503 cold-start responses from serverless backend
+if (!axios.defaults.__reciploreRetryConfigured) {
+    axios.defaults.__reciploreRetryConfigured = true;
+    axios.interceptors.response.use(
+        (response) => response,
+        async (error) => {
+            const config = error?.config;
+            const status = error?.response?.status;
+            if (config && status === 503 && (config.__retryCount || 0) < 2) {
+                config.__retryCount = (config.__retryCount || 0) + 1;
+                await new Promise((resolve) => setTimeout(resolve, 600 * config.__retryCount));
+                return axios(config);
+            }
+            return Promise.reject(error);
+        }
+    );
+}
+
 export const getAuthHeaders = () => {
     const accessToken = Cookies.get("accessToken");
     if (!accessToken || accessToken === "undefined" || accessToken === "null") {
