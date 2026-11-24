@@ -13,7 +13,7 @@ export default function HalfBanner({ bannerName, header, paragraph, classnames =
     useEffect(() => {
         const fetchBanner = async () => {
             try {
-                const response = await axios.get(`${API_URL}/banner/${bannerName}`, { timeout: 3000 });
+                const response = await axios.get(`${API_URL}/banner/${bannerName}`, { timeout: 10000 });
                 if (response.data.success || response.data.sucess) {
                     setBanner(response.data.banners);
                 }
