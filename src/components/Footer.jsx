@@ -1,149 +1,150 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Mail, Phone, MapPin, Twitter, Instagram, Facebook } from 'lucide-react';
+import { Mail, Phone, MapPin, ChefHat, ArrowRight } from 'lucide-react';
 
 export default function Footer() {
-    const currentYear = new Date().getFullYear();
-    const [newsletterEmail, setNewsletterEmail] = useState('');
+  const currentYear = new Date().getFullYear();
+  const [newsletterEmail, setNewsletterEmail] = React.useState('');
 
-    const handleNewsletterSubmit = (e) => {
-        e.preventDefault();
-        if (!newsletterEmail.trim()) return;
-        toast.success('Thanks for subscribing to Reciplore updates!', { position: 'top-right', autoClose: 3000 });
-        setNewsletterEmail('');
-    };
+  const handleNewsletterSubmit = (e) => {
+    e.preventDefault();
+    if (!newsletterEmail.trim()) return;
+    toast.success('Subscribed! Welcome to the Reciplore kitchen.', {
+      position: 'top-right',
+      autoClose: 3000,
+    });
+    setNewsletterEmail('');
+  };
 
-    return (
-        <footer className="bg-gray-900 text-gray-300 py-12">
-            <div className="container mx-auto px-4 md:px-6 lg:px-16 xl:px-20">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                    {/* Logo and Description */}
-                    <div className="flex flex-col items-start">
-                        <img
-                            src="https://res.cloudinary.com/dfdmgqhwa/image/upload/v1740230885/recipesSystem/Reciplore-removebg_xnsmub.png"
-                            alt="Reciplore Logo"
-                            className="h-16 mb-4"
-                        />
-                        <p className="text-sm leading-relaxed">
-                            Reciplore is your go-to platform for discovering delicious recipes tailored to your ingredients. Join our community and explore culinary creativity!
-                        </p>
-                    </div>
+  return (
+    <footer className="bg-stone-950 text-stone-300 border-t border-stone-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+          {/* Brand */}
+          <div className="space-y-4">
+            <Link to="/" className="inline-flex items-center gap-2.5 group">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20">
+                <ChefHat className="w-5 h-5" />
+              </div>
+              <span className="text-2xl font-display font-bold text-white tracking-tight">
+                Reciplore
+              </span>
+            </Link>
+            <p className="text-sm text-stone-400 leading-relaxed">
+              Your modern kitchen companion for discovering authentic global recipes, AI meal planning, and shopping fresh culinary ingredients.
+            </p>
+          </div>
 
-                    {/* Navigation Links */}
-                    <div>
-                        <h3 className="text-lg font-semibold text-white mb-4">Quick Links</h3>
-                        <ul className="space-y-2">
-                            <li>
-                                <Link to="/" className="hover:text-white transition-colors">
-                                    Home
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="/recipes" className="hover:text-white transition-colors">
-                                    Search Recipes
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="/about" className="hover:text-white transition-colors">
-                                    About Us
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="/contact" className="hover:text-white transition-colors">
-                                    Contact
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="/terms-and-conditions" className="hover:text-white transition-colors">
-                                    Terms and Conditions
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
+          {/* Explore */}
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-white mb-4">
+              Explore
+            </h3>
+            <ul className="space-y-2.5 text-sm">
+              <li>
+                <Link to="/recipes" className="text-stone-400 hover:text-orange-400 transition-colors">
+                  All Recipes
+                </Link>
+              </li>
+              <li>
+                <Link to="/market" className="text-stone-400 hover:text-orange-400 transition-colors">
+                  Ingredient Market
+                </Link>
+              </li>
+              <li>
+                <Link to="/categories" className="text-stone-400 hover:text-orange-400 transition-colors">
+                  Categories
+                </Link>
+              </li>
+              <li>
+                <Link to="/countries" className="text-stone-400 hover:text-orange-400 transition-colors">
+                  Cuisines by Country
+                </Link>
+              </li>
+              <li>
+                <Link to="/chat" className="text-stone-400 hover:text-orange-400 transition-colors">
+                  AI Chef Assistant
+                </Link>
+              </li>
+            </ul>
+          </div>
 
-                    {/* Contact Info */}
-                    <div>
-                        <h3 className="text-lg font-semibold text-white mb-4">Contact Us</h3>
-                        <ul className="space-y-2">
-                            <li className="flex items-center">
-                                <Mail className="w-5 h-5 mr-2" />
-                                <a href="mailto:reciplore0@gmail.com" className="hover:text-white transition-colors">
-                                    reciplore0@gmail.com
-                                </a>
-                            </li>
-                            <li className="flex items-center">
-                                <Phone className="w-5 h-5 mr-2" />
-                                <a href="tel:+201276085914" className="hover:text-white transition-colors">
-                                    +20 1276085914
-                                </a>
-                            </li>
-                            <li className="flex items-center">
-                                <MapPin className="w-5 h-5 mr-2" />
-                                <span>eelu-sohag university - egypt</span>
-                            </li>
-                        </ul>
-                    </div>
+          {/* Company & Contact */}
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-white mb-4">
+              Company & Contact
+            </h3>
+            <ul className="space-y-2.5 text-sm">
+              <li>
+                <Link to="/about" className="text-stone-400 hover:text-orange-400 transition-colors">
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="text-stone-400 hover:text-orange-400 transition-colors">
+                  Contact Support
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms-and-conditions" className="text-stone-400 hover:text-orange-400 transition-colors">
+                  Terms & Conditions
+                </Link>
+              </li>
+              <li className="pt-2 flex items-center gap-2 text-stone-400">
+                <Mail className="w-4 h-4 text-orange-400 shrink-0" />
+                <a href="mailto:reciplore0@gmail.com" className="hover:text-white transition-colors truncate">
+                  reciplore0@gmail.com
+                </a>
+              </li>
+              <li className="flex items-center gap-2 text-stone-400">
+                <Phone className="w-4 h-4 text-orange-400 shrink-0" />
+                <a href="tel:+201276085914" className="hover:text-white transition-colors">
+                  +20 1276085914
+                </a>
+              </li>
+              <li className="flex items-center gap-2 text-stone-400">
+                <MapPin className="w-4 h-4 text-orange-400 shrink-0" />
+                <span>Sohag, Egypt</span>
+              </li>
+            </ul>
+          </div>
 
-                    {/* Newsletter Signup */}
-                    <div>
-                        <h3 className="text-lg font-semibold text-white mb-4">Stay Updated</h3>
-                        <p className="text-sm mb-4">Subscribe to our newsletter for the latest recipes and tips!</p>
-                        <form onSubmit={handleNewsletterSubmit} className="flex flex-col space-y-2">
-                            <input
-                                type="email"
-                                value={newsletterEmail}
-                                onChange={(e) => setNewsletterEmail(e.target.value)}
-                                placeholder="Enter your email"
-                                className="px-4 py-2 rounded-md bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                                required
-                            />
-                            <button
-                                type="submit"
-                                className="px-4 py-2 bg-orange-500 text-white font-medium rounded-md hover:bg-orange-600 transition-colors cursor-pointer"
-                            >
-                                Subscribe
-                            </button>
-                        </form>
-                    </div>
-                </div>
+          {/* Newsletter */}
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-white mb-4">
+              Weekly Inspiration
+            </h3>
+            <p className="text-sm text-stone-400 mb-4 leading-relaxed">
+              Get handpicked seasonal recipes and cooking tips straight to your inbox.
+            </p>
+            <form onSubmit={handleNewsletterSubmit} className="space-y-2.5">
+              <div className="relative">
+                <input
+                  type="email"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl bg-stone-900 border border-stone-800 text-white placeholder-stone-500 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-md shadow-orange-500/20 cursor-pointer"
+              >
+                Subscribe
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        </div>
 
-                {/* Social Media and Copyright */}
-                <div className="mt-8 pt-8 border-t border-gray-700 flex flex-col md:flex-row justify-between items-center">
-                    <div className="flex space-x-4 mb-4 md:mb-0">
-                        <a
-                            href="https://x.com/reciplore"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:text-white transition-colors"
-                            aria-label="Follow us on X"
-                        >
-                            <Twitter className="w-6 h-6" />
-                        </a>
-                        <a
-                            href="https://instagram.com/reciplore"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:text-white transition-colors"
-                            aria-label="Follow us on Instagram"
-                        >
-                            <Instagram className="w-6 h-6" />
-                        </a>
-                        <a
-                            href="https://facebook.com/reciplore"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:text-white transition-colors"
-                            aria-label="Follow us on Facebook"
-                        >
-                            <Facebook className="w-6 h-6" />
-                        </a>
-                    </div>
-                    <p className="text-sm">
-                        &copy; {currentYear} Reciplore. All rights reserved.
-                    </p>
-                </div>
-            </div>
-        </footer>
-    );
+        <div className="mt-12 pt-8 border-t border-stone-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
+          <p>© {currentYear} Reciplore. All rights reserved.</p>
+          <p>Crafted with care for home cooks & food lovers.</p>
+        </div>
+      </div>
+    </footer>
+  );
 }

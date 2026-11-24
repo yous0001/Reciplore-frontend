@@ -7,25 +7,30 @@ import CategorySlider from '../components/CategorySlider';
 
 const Home = () => {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col space-y-6">
+    <div className="bg-[#FAF9F6] pb-14">
       <HomeBanner />
       <CategorySlider />
       <HomeRecipeDisplay />
       <FullBanner />
-      
-      <div className="container mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6">
-        <HalfBanner
-          bannerName="web_half1"
-          header="Learn from the best and create culinary magic at home."
-          paragraph="Get inspired by expert tips and techniques to perfect your skills. Explore recipes that help you master new dishes, adding confidence and creativity to your home cooking experience."
-          classnames="text-white"
-        />
-        <HalfBanner
-          bannerName="web_half2"
-          header="Add flavor, flair, and a touch of creativity to your meals."
-          paragraph="Elevate your dishes with bold flavors and creative twists. From vibrant ingredients to expert techniques, discover recipes that transform your everyday cooking into something extraordinary."
-        />
-      </div>
+
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <HalfBanner
+            bannerName="web_half1"
+            header="Learn from the best and create culinary magic at home."
+            paragraph="Get inspired by expert tips and techniques to perfect your skills and master new dishes with confidence."
+            to="/chat"
+            ctaLabel="Ask AI Chef"
+          />
+          <HalfBanner
+            bannerName="web_half2"
+            header="Personalized diet plans tailored to your fitness goals."
+            paragraph="Set your calories, preferences, and goals to receive a structured meal plan designed around your lifestyle."
+            to="/diet-plan"
+            ctaLabel="Build Diet Plan"
+          />
+        </div>
+      </section>
     </div>
   );
 };

@@ -1,60 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import { API_URL } from '../store/authStore';
 
-const FALLBACK_HALF_BANNER = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80";
+const FALLBACK_HALF_BANNER =
+  'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80';
 
-export default function HalfBanner({ bannerName, header, paragraph, classnames = "" }) {
-    const [banner, setBanner] = useState(null);
-    const navigate = useNavigate();
+export default function HalfBanner({ bannerName, header, paragraph, to = '/recipes', ctaLabel = 'Explore Now' }) {
+  const [banner, setBanner] = useState(null);
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchBanner = async () => {
-            try {
-                const response = await axios.get(`${API_URL}/banner/${bannerName}`, { timeout: 3000 });
-                if (response.data.success || response.data.sucess) {
-                    setBanner(response.data.banners);
-                }
-            } catch (err) {
-                console.warn(`Banner ${bannerName} unavailable, using fallback:`, err.message);
-            }
-        };
+  useEffect(() => {
+    const fetchBanner = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/banner/${bannerName}`, { timeout: 3000 });
+        if (response.data.success || response.data.sucess) {
+          setBanner(response.data.banners);
+        }
+      } catch (err) {
+        console.warn(`Banner ${bannerName} unavailable, using fallback:`, err.message);
+      }
+    };
+    fetchBanner();
+  }, [bannerName]);
 
-        fetchBanner();
-    }, [bannerName]);
+  const backgroundImage = banner?.Images?.[0]?.secure_url || FALLBACK_HALF_BANNER;
 
-    const backgroundImage = banner?.Images?.[0]?.secure_url || FALLBACK_HALF_BANNER;
-
-    return (
-        <div className={`flex-1 rounded-3xl overflow-hidden shadow-md relative min-h-[300px] flex items-center ${classnames}`}>
-            <div
-                className="w-full h-full min-h-[300px] bg-cover bg-center p-8 flex items-center rounded-3xl relative"
-                style={{
-                    backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.65)), url(${backgroundImage})`,
-                }}
-            >
-                <motion.div
-                    className="w-full space-y-4 text-white z-10"
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                >
-                    <h2 className="text-2xl font-bold leading-snug">
-                        {header}
-                    </h2>
-                    <p className="text-sm text-gray-200 leading-relaxed max-w-md">
-                        {paragraph}
-                    </p>
-                    <button
-                        onClick={() => navigate('/recipes')}
-                        className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl shadow transition-all duration-200 hover:scale-105 cursor-pointer mt-2"
-                    >
-                        Explore Now
-                    </button>
-                </motion.div>
-            </div>
-        </div>
-    );
+  return (
+    <div
+      className="flex-1 rounded-3xl overflow-hidden shadow-lg relative min-h-[300px] flex items-end bg-cover bg-center group"
+      style={{ backgroundImage: `url(${backgroundImage})` }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-t from-stone-950/90 via-stone-900/55 to-stone-900/20 group-hover:from-stone-950/95 transition-colors" />
+      <div className="relative z-10 p-8 space-y-3 text-white">
+        <h3 className="text-2xl font-display font-bold leading-snug">{header}</h3>
+        <p className="text-stone-200 text-sm leading-relaxed line-clamp-3">{paragraph}</p>
+        <button
+          onClick={() => navigate(to)}
+          className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 bg-white text-stone-900 hover:bg-orange-500 hover:text-white font-semibold text-sm rounded-xl transition-all cursor-pointer"
+        >
+          {ctaLabel}
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
 }

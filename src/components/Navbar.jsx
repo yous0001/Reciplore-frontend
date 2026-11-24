@@ -1,285 +1,282 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ShoppingCart, Heart, LogOut, Package, User } from 'lucide-react';
-import { useAuthStore } from '../store/authStore'; // Adjust the path as needed
+import { ShoppingCart, Heart, LogOut, Package, User, Menu, X, ChefHat, ChevronDown } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
 
 const navItems = [
-    { name: "Home", to: "/" },
-    { name: "Recipes", to: "/recipes" },
-    { name: "Market", to: "/market" },
-    { name: "Categories", to: "/categories" },
-    { name: "Countries", to: "/countries" },
-    { name: "Chat", to: "/chat" },
-    { name: "Diet Plan", to: "/diet-plan" },
+  { name: 'Home', to: '/' },
+  { name: 'Recipes', to: '/recipes' },
+  { name: 'Market', to: '/market' },
+  { name: 'Categories', to: '/categories' },
+  { name: 'Countries', to: '/countries' },
+  { name: 'AI Chef', to: '/chat' },
+  { name: 'Diet Plan', to: '/diet-plan' },
 ];
 
 export default function Navbar() {
-    const [isOpen, setIsOpen] = useState(false);
-    const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const [scrolled, setScrolled] = useState(false);
-    const { isAuthenticated, user, restoreSession, isCheckingAuth, logout } = useAuthStore();
-    const profileRef = useRef(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const { isAuthenticated, user, restoreSession, logout } = useAuthStore();
+  const profileRef = useRef(null);
 
-    useEffect(() => {
-        restoreSession();
-    }, []);
+  useEffect(() => {
+    restoreSession();
+  }, [restoreSession]);
 
-    useEffect(() => {
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 20);
-        };
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-    // Close profile dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (profileRef.current && !profileRef.current.contains(event.target)) {
-                setIsProfileOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, []);
-
-    const handleLogout = () => {
-        logout();
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
         setIsProfileOpen(false);
-        setIsOpen(false);
+      }
     };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-    return (
-        <>
-        {scrolled && <div className="h-16" />}
-        <header
-            className={`w-full z-50 transition-all duration-300 ${scrolled ? 'fixed top-0 left-0 right-0 shadow-md bg-white/95 backdrop-blur-md' : 'bg-white'}`}
-        >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-16 items-center">
-                    <div className="flex-shrink-0">
-                        <NavLink to="/">
-                            <img
-                                src="https://res.cloudinary.com/dfdmgqhwa/image/upload/v1740230885/recipesSystem/Reciplore-removebg_xnsmub.png"
-                                alt="Logo"
-                                className="h-16 w-auto transition-transform hover:scale-105"
-                            />
-                        </NavLink>
-                    </div>
+  const handleLogout = () => {
+    logout();
+    setIsProfileOpen(false);
+    setIsOpen(false);
+  };
 
-                    <nav className="hidden md:flex space-x-8 items-center">
-                        {navItems.map((item) => (
-                            <NavLink
-                                key={item.name}
-                                to={item.to}
-                                className={({ isActive }) =>
-                                    isActive
-                                        ? "text-orange-400 font-semibold border-b-2 border-orange-400"
-                                        : "text-gray-700 hover:text-orange-400 transition-all duration-200"
-                                }
-                            >
-                                {item.name}
-                            </NavLink>
-                        ))}
-                    </nav>
-
-                    <div className="hidden md:flex items-center space-x-6">
-                        {isAuthenticated ? (
-                            <div className="relative" ref={profileRef}>
-                                <button
-                                    onClick={() => setIsProfileOpen(!isProfileOpen)}
-                                    className="flex items-center space-x-2 text-gray-700 hover:text-orange-400 focus:outline-none transition-all duration-200"
-                                >
-                                    <img
-                                        src={user?.profileImage || '/default-profile.png'}
-                                        alt="Profile"
-                                        className="w-10 h-10 rounded-full object-cover border-2 border-gray-300 hover:border-orange-400 transition-all"
-                                        onError={(e) => { e.target.src = '/default-profile.png'; }}
-                                    />
-                                    <span className="text-sm font-medium">{user?.username || 'Profile'}</span>
-                                </button>
-                                {isProfileOpen && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg">
-                                        <NavLink
-                                            to="/profile"
-                                            onClick={() => setIsProfileOpen(false)}
-                                            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-t-md transition-all"
-                                        >
-                                            Profile
-                                        </NavLink>
-                                        <NavLink
-                                            to="/orders"
-                                            onClick={() => setIsProfileOpen(false)}
-                                            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center transition-all"
-                                        >
-                                            <Package size={18} className="mr-2" /> Orders
-                                        </NavLink>
-                                        <button
-                                            onClick={handleLogout}
-                                            className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-b-md flex items-center transition-all"
-                                        >
-                                            <LogOut size={18} className="mr-2" /> Logout
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <>
-                                <NavLink
-                                    to="/auth/login"
-                                    className="text-gray-700 hover:text-orange-400 transition-all duration-200"
-                                >
-                                    Login
-                                </NavLink>
-                                <NavLink
-                                    to="/auth/register"
-                                    className="px-4 py-2 text-white bg-orange-400 hover:bg-orange-500 rounded shadow-md transition-all duration-200"
-                                >
-                                    Register
-                                </NavLink>
-                            </>
-                        )}
-                        <NavLink
-                            to="/favourites"
-                            className="text-gray-700 hover:text-orange-400 transition-all duration-200"
-                        >
-                            <Heart size={20} />
-                        </NavLink>
-                        <NavLink
-                            to="/cart"
-                            className="text-gray-700 hover:text-orange-400 transition-all duration-200"
-                        >
-                            <ShoppingCart size={20} />
-                        </NavLink>
-                    </div>
-
-                    <div className="md:hidden flex items-center">
-                        <button
-                            onClick={() => setIsOpen(!isOpen)}
-                            className="text-gray-700 hover:text-orange-400 focus:outline-none transition-all duration-200"
-                            aria-label="Toggle menu"
-                        >
-                            <svg
-                                className="h-6 w-6"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d={isOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
-                                />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                {isOpen && (
-                    <div className="md:hidden mt-2 space-y-2 pb-4 bg-white rounded-b-lg shadow-lg">
-                        <div className="flex flex-col space-y-2 px-4 pt-4">
-                            {navItems.map((item) => (
-                                <NavLink
-                                    key={item.name}
-                                    to={item.to}
-                                    onClick={() => setIsOpen(false)}
-                                    className={({ isActive }) =>
-                                        isActive
-                                            ? "block px-4 py-2 text-orange-400 font-semibold bg-gray-100 rounded"
-                                            : "block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-all"
-                                    }
-                                >
-                                    {item.name}
-                                </NavLink>
-                            ))}
-                        </div>
-                        <div className="border-t border-gray-300 pt-4 mt-2 px-4 space-y-2">
-                            {isAuthenticated ? (
-                                <div className="relative" ref={profileRef}>
-                                    <button
-                                        onClick={() => setIsProfileOpen(!isProfileOpen)}
-                                        className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 w-full text-left rounded"
-                                    >
-                                        <img
-                                            src={user?.profileImage || '/default-profile.png'}
-                                            alt="Profile"
-                                            className="w-8 h-8 rounded-full object-cover border border-gray-300"
-                                            onError={(e) => { e.target.src = '/default-profile.png'; }}
-                                        />
-                                        <span>Profile</span>
-                                    </button>
-                                    {isProfileOpen && (
-                                        <div className="mt-2 space-y-2 bg-white border border-gray-300 rounded-md shadow">
-                                            <NavLink
-                                                to="/profile"
-                                                onClick={() => {
-                                                    setIsProfileOpen(false);
-                                                    setIsOpen(false);
-                                                }}
-                                                className="block px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center rounded"
-                                            >
-                                                <User size={18} className="mr-2" /> Profile
-                                            </NavLink>
-                                            <NavLink
-                                                to="/orders"
-                                                onClick={() => {
-                                                    setIsProfileOpen(false);
-                                                    setIsOpen(false);
-                                                }}
-                                                className="block px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center rounded"
-                                            >
-                                                <Package size={18} className="mr-2" /> Orders
-                                            </NavLink>
-                                            <button
-                                                onClick={handleLogout}
-                                                className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded flex items-center"
-                                            >
-                                                <LogOut size={18} className="mr-2" /> Logout
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <>
-                                    <NavLink
-                                        to="/auth/login"
-                                        onClick={() => setIsOpen(false)}
-                                        className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
-                                    >
-                                        Login
-                                    </NavLink>
-                                    <NavLink
-                                        to="/auth/register"
-                                        onClick={() => setIsOpen(false)}
-                                        className="block px-4 py-2 text-white bg-orange-400 hover:bg-orange-500 rounded text-center"
-                                    >
-                                        Register
-                                    </NavLink>
-                                </>
-                            )}
-                            <NavLink
-                                to="/favourites"
-                                onClick={() => setIsOpen(false)}
-                                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
-                            >
-                                <Heart size={18} /> Favourites
-                            </NavLink>
-                            <NavLink
-                                to="/cart"
-                                onClick={() => setIsOpen(false)}
-                                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
-                            >
-                                <ShoppingCart size={18} /> Cart
-                            </NavLink>
-                        </div>
-                    </div>
-                )}
+  return (
+    <header
+      className={`sticky top-0 z-50 w-full transition-all duration-300 border-b ${
+        scrolled
+          ? 'bg-white/90 backdrop-blur-lg border-stone-200/80 shadow-sm'
+          : 'bg-white/95 backdrop-blur-md border-stone-100'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16 items-center gap-4">
+          {/* Brand */}
+          <NavLink to="/" className="flex items-center gap-2.5 shrink-0 group">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
+              <ChefHat className="w-5 h-5" />
             </div>
-        </header>
-        {scrolled ? <div className='my-16'/> : ""}
-        </>
-    );
+            <span className="text-xl font-display font-bold text-stone-900 tracking-tight">
+              Reciplore
+            </span>
+          </NavLink>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.name}
+                to={item.to}
+                className={({ isActive }) =>
+                  `px-3.5 py-2 rounded-xl text-sm font-semibold transition-all ${
+                    isActive
+                      ? 'bg-orange-50 text-orange-600'
+                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/70'
+                  }`
+                }
+              >
+                {item.name}
+              </NavLink>
+            ))}
+          </nav>
+
+          {/* Right Actions */}
+          <div className="hidden md:flex items-center gap-2">
+            {isAuthenticated ? (
+              <>
+                <NavLink
+                  to="/favourites"
+                  aria-label="Favorites"
+                  className={({ isActive }) =>
+                    `p-2.5 rounded-xl transition-colors ${
+                      isActive
+                        ? 'bg-orange-50 text-orange-600'
+                        : 'text-stone-600 hover:bg-stone-100 hover:text-orange-600'
+                    }`
+                  }
+                >
+                  <Heart className="w-5 h-5" />
+                </NavLink>
+                <NavLink
+                  to="/cart"
+                  aria-label="Cart"
+                  className={({ isActive }) =>
+                    `p-2.5 rounded-xl transition-colors ${
+                      isActive
+                        ? 'bg-orange-50 text-orange-600'
+                        : 'text-stone-600 hover:bg-stone-100 hover:text-orange-600'
+                    }`
+                  }
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                </NavLink>
+
+                <div className="relative ml-1" ref={profileRef}>
+                  <button
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border border-stone-200 bg-white hover:border-orange-300 transition-all cursor-pointer"
+                  >
+                    {user?.profileImage?.secure_url || (typeof user?.profileImage === 'string' && user.profileImage) ? (
+                      <img
+                        src={user?.profileImage?.secure_url || user?.profileImage}
+                        alt={user?.username || 'Profile'}
+                        className="w-7 h-7 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xs font-bold uppercase">
+                        {(user?.username || 'U')[0]}
+                      </div>
+                    )}
+                    <span className="text-sm font-semibold text-stone-800 max-w-[100px] truncate">
+                      {user?.username || 'Account'}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-stone-400" />
+                  </button>
+
+                  {isProfileOpen && (
+                    <div className="absolute right-0 mt-2 w-52 bg-white border border-stone-200 rounded-2xl shadow-xl py-1.5 z-50">
+                      <NavLink
+                        to="/profile"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                      >
+                        <User className="w-4 h-4" />
+                        Profile
+                      </NavLink>
+                      <NavLink
+                        to="/orders"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                      >
+                        <Package className="w-4 h-4" />
+                        Orders
+                      </NavLink>
+                      <div className="my-1 border-t border-stone-100" />
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <NavLink
+                  to="/auth/login"
+                  className="px-4 py-2 text-sm font-semibold text-stone-700 hover:text-orange-600 transition-colors"
+                >
+                  Log in
+                </NavLink>
+                <NavLink
+                  to="/auth/register"
+                  className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 rounded-xl shadow-sm shadow-orange-500/20 transition-all"
+                >
+                  Get Started
+                </NavLink>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Menu Toggle */}
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            aria-label="Toggle Menu"
+            className="lg:hidden p-2 rounded-xl text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer"
+          >
+            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Drawer */}
+      {isOpen && (
+        <div className="lg:hidden bg-white border-t border-stone-100 px-4 py-4 space-y-1 shadow-lg">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.name}
+              to={item.to}
+              onClick={() => setIsOpen(false)}
+              className={({ isActive }) =>
+                `block px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                  isActive
+                    ? 'bg-orange-50 text-orange-600'
+                    : 'text-stone-700 hover:bg-stone-50'
+                }`
+              }
+            >
+              {item.name}
+            </NavLink>
+          ))}
+
+          <div className="pt-3 mt-3 border-t border-stone-100 space-y-1">
+            {isAuthenticated ? (
+              <>
+                <NavLink
+                  to="/favourites"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium text-stone-700 hover:bg-stone-50"
+                >
+                  <Heart className="w-4 h-4 text-orange-500" /> Favorites
+                </NavLink>
+                <NavLink
+                  to="/cart"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium text-stone-700 hover:bg-stone-50"
+                >
+                  <ShoppingCart className="w-4 h-4 text-orange-500" /> Cart
+                </NavLink>
+                <NavLink
+                  to="/profile"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium text-stone-700 hover:bg-stone-50"
+                >
+                  <User className="w-4 h-4 text-orange-500" /> Profile
+                </NavLink>
+                <NavLink
+                  to="/orders"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium text-stone-700 hover:bg-stone-50"
+                >
+                  <Package className="w-4 h-4 text-orange-500" /> Orders
+                </NavLink>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" /> Logout
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col gap-2 pt-1">
+                <NavLink
+                  to="/auth/login"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full text-center px-4 py-2.5 rounded-xl border border-stone-200 text-sm font-semibold text-stone-700"
+                >
+                  Log in
+                </NavLink>
+                <NavLink
+                  to="/auth/register"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full text-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-sm font-semibold text-white"
+                >
+                  Get Started
+                </NavLink>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </header>
+  );
 }
