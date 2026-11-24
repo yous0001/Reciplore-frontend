@@ -22,7 +22,7 @@ export default function Navbar() {
 
     useEffect(() => {
         restoreSession();
-    }, [restoreSession]);
+    }, []);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -44,8 +44,6 @@ export default function Navbar() {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
-
-    if (isCheckingAuth) return null;
 
     const handleLogout = () => {
         logout();

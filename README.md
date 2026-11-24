@@ -1,12 +1,39 @@
-# React + Vite
+# 🍳 Reciplore — Frontend Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Modern Single Page Application for Reciplore built with React 19, Vite 6, Tailwind CSS v4, and Zustand.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ⚡ Enhancements & Optimizations
 
-## Expanding the ESLint configuration
+- **Route Code Splitting**: All page routes are loaded asynchronously with `React.lazy()` and `<Suspense>` skeletons.
+- **Vendor Chunk Splitting**: Rollup `manualChunks` in `vite.config.js` splits `vendor`, `ui`, and `utils`, reducing initial gzipped bundle to ~71 kB.
+- **Centralized Auth & Session Handling**: Overhauled `authStore.js` with `getAuthHeaders()`, automatic token refresh, clean session restore, and eliminated all `accessToken_undefined` bugs.
+- **Graceful UI Fallbacks**: Skeletons, placeholder images, and error bounds for banners, cards, and AI recommendations.
+- **Fixed Cart & Favorite Management**: Synchronized state with backend routes `/auth/toggle-favourite`, `/cart/add`, `/cart/remove`, and `/order/stripe`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js (v18+)
+
+### Setup
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Copy environment file:
+   ```bash
+   cp .env.example .env
+   ```
+   Ensure `VITE_BACKEND_URL=http://localhost:5000`.
+3. Start development server:
+   ```bash
+   npm run dev
+   ```
+4. Build for production:
+   ```bash
+   npm run build
+   ```

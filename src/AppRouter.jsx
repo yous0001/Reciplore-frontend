@@ -1,76 +1,88 @@
+import React, { lazy, Suspense } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import MainLayout from "./pages/MainLayout";
-import NotFound from './pages/NotFound';
-import Home from './pages/Home';
-import RecipeList from './pages/RecipeList';
-import RecipeDetails from './pages/RecipeDetails';
-import Market from './pages/Market';
-import IngredientDetails from './pages/IngredientDetails';
-import Checkout from "./pages/Checkout";
-import Categories from './pages/Categories';
-import Countries from './pages/Countries';
-import Login from './pages/Auth/Login';
-import Register from './pages/Auth/Register';
-import ForgetPassword from "./pages/Auth/ForgetPassword";
-import ResetPassword from './pages/Auth/ResetPassword';
-import VerifyEmail from './pages/Auth/VerifyEmail';
-import TwoFactorAuth from './pages/Auth/TwoFactorAuth';
-import AuthLayout from "./pages/Auth/AuthLayout";
-import Profile from "./pages/Profile";
-import Chat from "./pages/Chat";
-import Cart from "./pages/Cart";
-import DietPlan from "./pages/DietPlan";
-import SearchWithAi from "./pages/SearchWithAi";
-import RecommendationDetails from "./pages/RecommendationDetails";
-import Favorite from "./pages/Favorite";
-import Contact from "./pages/Contact";
-import TermsAndConditions from "./pages/TermsAndConditions";
-import Order from "./pages/Order";
-import Orders from "./pages/Orders";
-import OrderDetails from "./pages/OrderDetails";
+import LoadingSpinner from "./components/LoadingSpinner";
+
+// Lazy-loaded pages for optimal bundle size and instant initial load
+const Home = lazy(() => import("./pages/Home"));
+const RecipeList = lazy(() => import("./pages/RecipeList"));
+const RecipeDetails = lazy(() => import("./pages/RecipeDetails"));
+const Market = lazy(() => import("./pages/Market"));
+const IngredientDetails = lazy(() => import("./pages/IngredientDetails"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const Categories = lazy(() => import("./pages/Categories"));
+const Countries = lazy(() => import("./pages/Countries"));
+const Chat = lazy(() => import("./pages/Chat"));
+const Cart = lazy(() => import("./pages/Cart"));
+const Profile = lazy(() => import("./pages/Profile"));
+const DietPlan = lazy(() => import("./pages/DietPlan"));
+const SearchWithAi = lazy(() => import("./pages/SearchWithAi"));
+const RecommendationDetails = lazy(() => import("./pages/RecommendationDetails"));
+const Favorite = lazy(() => import("./pages/Favorite"));
+const Contact = lazy(() => import("./pages/Contact"));
+const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
+const Order = lazy(() => import("./pages/Order"));
+const Orders = lazy(() => import("./pages/Orders"));
+const OrderDetails = lazy(() => import("./pages/OrderDetails"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Lazy-loaded auth pages
+const AuthLayout = lazy(() => import("./pages/Auth/AuthLayout"));
+const Login = lazy(() => import("./pages/Auth/Login"));
+const Register = lazy(() => import("./pages/Auth/Register"));
+const ForgetPassword = lazy(() => import("./pages/Auth/ForgetPassword"));
+const ResetPassword = lazy(() => import("./pages/Auth/ResetPassword"));
+const VerifyEmail = lazy(() => import("./pages/Auth/VerifyEmail"));
+const TwoFactorAuth = lazy(() => import("./pages/Auth/TwoFactorAuth"));
+
+const withSuspense = (Component) => (
+  <Suspense fallback={<LoadingSpinner />}>
+    <Component />
+  </Suspense>
+);
 
 const router = createBrowserRouter([
-    {
-        path: "/",
-        element: <MainLayout />,
-        errorElement: <NotFound />,
-        children: [
-            { index: true, element: <Home /> },
-            { path: "recipes", element: <RecipeList /> },
-            { path: "/recipe/:slug", element: <RecipeDetails /> },
-            { path: "market", element: <Market /> },
-            { path: "ingredient/:slug", element: <IngredientDetails /> },
-            { path: "checkout", element: <Checkout /> },
-            { path: "categories", element: <Categories /> },
-            { path: "countries", element: <Countries /> },
-            { path: "chat", element: <Chat/>},
-            { path: "cart", element: <Cart/> },
-            { path: "profile", element: <Profile/> },
-            { path: "diet-plan", element: <DietPlan/> },
-            { path: "search-ai/:query", element: <SearchWithAi/> },
-            {path: "recommendation/:name", element: <RecommendationDetails/>},
-            { path: "favourites", element: <Favorite/>},
-            { path: "contact", element: <Contact /> },
-            { path: "terms-and-conditions", element: <TermsAndConditions /> },
-            {path:"/order",element:<Order/>},
-            {path:"/orders",element:<Orders/>},
-            {path:"/order/:orderId",element:<OrderDetails/>},
-            { path: "*", element: <NotFound /> }
-        ],
-    },
-    {
-        path: "/auth",
-        element: <AuthLayout />,
-        children: [
-            { index: true, element: <Login /> },
-            { path: "login", element: <Login /> },
-            { path: "register", element: <Register /> },
-            { path: "forget-password", element: <ForgetPassword /> },
-            { path: "reset-password/:token", element: <ResetPassword /> },
-            { path: "verify-email/:token", element: <VerifyEmail /> },
-            { path: "2fa", element: <TwoFactorAuth /> },
-        ],
-    }
+  {
+    path: "/",
+    element: <MainLayout />,
+    errorElement: withSuspense(NotFound),
+    children: [
+      { index: true, element: withSuspense(Home) },
+      { path: "recipes", element: withSuspense(RecipeList) },
+      { path: "recipe/:slug", element: withSuspense(RecipeDetails) },
+      { path: "market", element: withSuspense(Market) },
+      { path: "ingredient/:slug", element: withSuspense(IngredientDetails) },
+      { path: "checkout", element: withSuspense(Checkout) },
+      { path: "categories", element: withSuspense(Categories) },
+      { path: "countries", element: withSuspense(Countries) },
+      { path: "chat", element: withSuspense(Chat) },
+      { path: "cart", element: withSuspense(Cart) },
+      { path: "profile", element: withSuspense(Profile) },
+      { path: "diet-plan", element: withSuspense(DietPlan) },
+      { path: "search-ai/:query", element: withSuspense(SearchWithAi) },
+      { path: "recommendation/:name", element: withSuspense(RecommendationDetails) },
+      { path: "favourites", element: withSuspense(Favorite) },
+      { path: "contact", element: withSuspense(Contact) },
+      { path: "terms-and-conditions", element: withSuspense(TermsAndConditions) },
+      { path: "order", element: withSuspense(Order) },
+      { path: "orders", element: withSuspense(Orders) },
+      { path: "order/:orderId", element: withSuspense(OrderDetails) },
+      { path: "*", element: withSuspense(NotFound) },
+    ],
+  },
+  {
+    path: "/auth",
+    element: withSuspense(AuthLayout),
+    children: [
+      { index: true, element: withSuspense(Login) },
+      { path: "login", element: withSuspense(Login) },
+      { path: "register", element: withSuspense(Register) },
+      { path: "forget-password", element: withSuspense(ForgetPassword) },
+      { path: "reset-password/:token", element: withSuspense(ResetPassword) },
+      { path: "verify-email/:token", element: withSuspense(VerifyEmail) },
+      { path: "2fa", element: withSuspense(TwoFactorAuth) },
+    ],
+  },
 ]);
 
 const AppRouter = () => <RouterProvider router={router} />;

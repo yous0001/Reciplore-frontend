@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Cookies from 'js-cookie';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
+import { API_URL, getAuthHeaders } from '../store/authStore';
 
 const Cart = () => {
     const navigate = useNavigate();
@@ -18,22 +18,21 @@ const Cart = () => {
         const fetchCart = async () => {
             setLoading(true);
             setError(null);
-            const accessToken = Cookies.get('accessToken');
-            if (!accessToken) {
+            const authHeaders = getAuthHeaders();
+            if (!authHeaders.accessToken) {
                 setError('Please log in to view your cart.');
                 setLoading(false);
                 return;
             }
 
             try {
-                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/cart`, {
-                    headers: { accessToken: `accessToken_${accessToken}` },
+                const response = await axios.get(`${API_URL}/cart`, {
+                    headers: authHeaders,
                 });
-                console.log('API Response:', response.data);
                 setCart(response.data.cart);
             } catch (err) {
-                console.log('API Error:', err.response?.status, err.response?.data);
-                setError('Failed to fetch cart: ' + err.message);
+                console.error('API Error in Cart:', err.message);
+                setError('Failed to fetch cart: ' + (err.response?.data?.message || err.message));
             } finally {
                 setLoading(false);
             }
@@ -43,48 +42,47 @@ const Cart = () => {
     }, []);
 
     const handleRemoveIngredient = async (ingredientId) => {
-        const accessToken = Cookies.get('accessToken');
         try {
             await axios.put(
-                `${import.meta.env.VITE_BACKEND_URL}/cart/remove/${ingredientId}`,
+                `${API_URL}/cart/remove/${ingredientId}`,
                 {},
-                { headers: { accessToken: `accessToken_${accessToken}` } }
+                { headers: getAuthHeaders() }
             );
-            setCart((prevCart) => ({
-                ...prevCart,
-                ingredients: prevCart.ingredients.filter((item) => item.IngredientID._id !== ingredientId),
-                subTotal: prevCart.ingredients
-                    .filter((item) => item.IngredientID._id !== ingredientId)
-                    .reduce((sum, item) => sum + item.IngredientID.appliedPrice * item.quantity, 0),
-            }));
-            setCouponDetails(null); // Reset coupon if cart changes
+            setCart((prevCart) => {
+                const updatedItems = (prevCart?.ingredients || []).filter(
+                    (item) => (item.IngredientID?._id || item.IngredientID) !== ingredientId
+                );
+                return {
+                    ...prevCart,
+                    ingredients: updatedItems,
+                    subTotal: updatedItems.reduce((sum, item) => sum + (item.IngredientID?.appliedPrice || item.price || 0) * item.quantity, 0),
+                };
+            });
+            setCouponDetails(null);
+            toast.success("Item removed from cart");
         } catch (err) {
-            console.log('Remove Error:', err.response?.status, err.response?.data);
-            setError('Failed to remove ingredient: ' + err.message);
-            toast.error('Failed to remove ingredient: ' + err.message, { position: 'top-right', autoClose: 3000 });
+            console.error('Remove Error:', err.message);
+            toast.error(err.response?.data?.message || 'Failed to remove ingredient');
         }
     };
 
     const handleUpdateQuantity = async (ingredientId, newQuantity) => {
-        const accessToken = Cookies.get('accessToken');
         try {
-            const response = await axios.put(
-                `${import.meta.env.VITE_BACKEND_URL}/cart/update/${ingredientId}`,
+            await axios.put(
+                `${API_URL}/cart/update/${ingredientId}`,
                 { quantity: newQuantity },
-                { headers: { accessToken: `accessToken_${accessToken}` } }
+                { headers: getAuthHeaders() }
             );
-            console.log('Update Response:', response.data);
             setCart((prevCart) => {
-                const updatedIngredients = prevCart.ingredients.map((item) =>
-                    item.IngredientID._id === ingredientId
-                        ? { ...item, quantity: newQuantity, price: item.IngredientID.appliedPrice * newQuantity }
+                const updatedIngredients = (prevCart?.ingredients || []).map((item) =>
+                    (item.IngredientID?._id || item.IngredientID) === ingredientId
+                        ? { ...item, quantity: newQuantity }
                         : item
                 );
                 const newSubTotal = updatedIngredients.reduce(
-                    (sum, item) => sum + item.IngredientID.appliedPrice * item.quantity,
+                    (sum, item) => sum + (item.IngredientID?.appliedPrice || item.price || 0) * item.quantity,
                     0
                 );
-                console.log('New Subtotal Calculation:', newSubTotal);
                 return {
                     ...prevCart,
                     ingredients: updatedIngredients,
@@ -92,27 +90,24 @@ const Cart = () => {
                 };
             });
             setQuantityUpdates((prev) => ({ ...prev, [ingredientId]: newQuantity }));
-            setCouponDetails(null); // Reset coupon if cart changes
+            setCouponDetails(null);
         } catch (err) {
-            console.log('Update Error:', err.response?.status, err.response?.data);
-            setError('Failed to update quantity: ' + err.message);
-            toast.error('Failed to update quantity: ' + err.message, { position: 'top-right', autoClose: 3000 });
+            console.error('Update Quantity Error:', err.message);
+            toast.error(err.response?.data?.message || 'Failed to update quantity');
         }
     };
 
     const handleClearCart = async () => {
-        const accessToken = Cookies.get('accessToken');
         try {
-            await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/cart/clear`, {
-                headers: { accessToken: `accessToken_${accessToken}` },
+            await axios.delete(`${API_URL}/cart/clear`, {
+                headers: getAuthHeaders(),
             });
             setCart(null);
             setCouponDetails(null);
             toast.success('Cart cleared successfully', { position: 'top-right', autoClose: 3000 });
         } catch (err) {
-            console.log('Clear Error:', err.response?.status, err.response?.data);
-            setError('Failed to clear cart: ' + err.message);
-            toast.error('Failed to clear cart: ' + err.message, { position: 'top-right', autoClose: 3000 });
+            console.error('Clear Error:', err.message);
+            toast.error(err.response?.data?.message || 'Failed to clear cart');
         }
     };
 
@@ -123,24 +118,22 @@ const Cart = () => {
         }
         if (!cart) return;
 
-        const accessToken = Cookies.get('accessToken');
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/order/check-coupon`,
+                `${API_URL}/order/check-coupon`,
                 {
                     couponCode,
                     total: cart.subTotal,
                 },
-                { headers: { accessToken: `accessToken_${accessToken}` } }
+                { headers: getAuthHeaders() }
             );
-            console.log('Coupon Response:', response.data);
             setCouponDetails(response.data);
             setError(null);
             toast.success('Coupon applied successfully', { position: 'top-right', autoClose: 3000 });
         } catch (err) {
-            console.log('Coupon Error:', err.response?.status, err.response?.data);
-            setError(err.response?.data?.message || 'Failed to apply coupon: ' + err.message);
-            toast.error(err.response?.data?.message || 'Failed to apply coupon: ' + err.message, { position: 'top-right', autoClose: 3000 });
+            console.error('Coupon Error:', err.message);
+            setError(err.response?.data?.message || 'Failed to apply coupon');
+            toast.error(err.response?.data?.message || 'Failed to apply coupon');
         }
     };
 

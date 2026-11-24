@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/authStore'; // Adjust the path as needed
+import { useAuthStore, API_URL, getAuthHeaders } from '../store/authStore';
 import { NavLink } from 'react-router-dom';
 import { LogOut, Edit, Trash2, Upload, Plus } from 'lucide-react';
 import axios from 'axios';
@@ -45,8 +45,8 @@ export default function Profile() {
     };
 
     const handleAddAddress = async () => {
-        const accessToken = Cookies.get('accessToken');
-        if (!accessToken) {
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders.accessToken) {
             setAddressError('Please log in to add an address.');
             toast.error('Please log in to add an address.', { position: 'top-right', autoClose: 3000 });
             return;
@@ -54,7 +54,7 @@ export default function Profile() {
 
         const requiredFields = ['country', 'city', 'postalCode', 'buildingNumber', 'floorNumber', 'streetName'];
         for (const field of requiredFields) {
-            if (!addressForm[field].trim()) {
+            if (!addressForm[field]?.trim()) {
                 const fieldName = field.replace(/([A-Z])/g, ' $1').toLowerCase();
                 setAddressError(`Please fill in the ${fieldName}.`);
                 toast.error(`Please fill in the ${fieldName}.`, { position: 'top-right', autoClose: 3000 });
@@ -64,7 +64,7 @@ export default function Profile() {
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/address/add`,
+                `${API_URL}/address/add`,
                 {
                     country: addressForm.country,
                     city: addressForm.city,
@@ -75,13 +75,13 @@ export default function Profile() {
                     addressLabel: addressForm.addressLabel || undefined,
                     notes: addressForm.notes || undefined,
                 },
-                { headers: { accessToken: `accessToken_${accessToken}` } }
+                { headers: authHeaders }
             );
             console.log('Add Address Response:', response.data);
             useAuthStore.setState((state) => ({
                 user: {
                     ...state.user,
-                    addresses: [...(state.user.addresses || []), response.data.address],
+                    addresses: [...(state.user?.addresses || []), response.data.address],
                 },
             }));
             setIsAddAddressModalOpen(false);
@@ -107,22 +107,22 @@ export default function Profile() {
     const handleDeleteAddress = async (addressId) => {
         if (!window.confirm('Are you sure you want to delete this address?')) return;
 
-        const accessToken = Cookies.get('accessToken');
-        if (!accessToken) {
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders.accessToken) {
             toast.error('Please log in to delete an address.', { position: 'top-right', autoClose: 3000 });
             return;
         }
 
         try {
             const response = await axios.delete(
-                `${import.meta.env.VITE_BACKEND_URL}/address/${addressId}`,
-                { headers: { accessToken: `accessToken_${accessToken}` } }
+                `${API_URL}/address/${addressId}`,
+                { headers: authHeaders }
             );
             console.log('Delete Address Response:', response.data);
             useAuthStore.setState((state) => ({
                 user: {
                     ...state.user,
-                    addresses: state.user.addresses.filter((addr) => addr._id !== addressId),
+                    addresses: (state.user?.addresses || []).filter((addr) => addr._id !== addressId),
                 },
             }));
             toast.success('Address deleted successfully!', { position: 'top-right', autoClose: 3000 });

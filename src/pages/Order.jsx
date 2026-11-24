@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import Cookies from 'js-cookie';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
 import { CreditCard, HandCoins, Plus } from 'lucide-react';
+import { API_URL, getAuthHeaders } from '../store/authStore';
 
 const Order = () => {
     const navigate = useNavigate();
@@ -34,8 +34,8 @@ const Order = () => {
         const fetchOrderDetails = async () => {
             setLoading(true);
             setError(null);
-            const accessToken = Cookies.get('accessToken');
-            if (!accessToken) {
+            const authHeaders = getAuthHeaders();
+            if (!authHeaders.accessToken) {
                 setError('Please log in to check your order.');
                 setLoading(false);
                 toast.error('Please log in to check your order.', { position: 'top-right', autoClose: 3000 });
@@ -50,15 +50,14 @@ const Order = () => {
 
             try {
                 const response = await axios.post(
-                    `${import.meta.env.VITE_BACKEND_URL}/order/cart-overview`,
+                    `${API_URL}/order/cart-overview`,
                     { couponCode: couponCode || null },
-                    { headers: { accessToken: `accessToken_${accessToken}` } }
+                    { headers: authHeaders }
                 );
-                console.log('Check Order Response:', response.data);
                 setOrderDetails(response.data);
-                setSelectedAddressID(response.data.addresses.find((addr) => addr.isDefault)?._id || '');
+                setSelectedAddressID(response.data.addresses?.find((addr) => addr.isDefault)?._id || response.data.addresses?.[0]?._id || '');
             } catch (err) {
-                console.log('Check Order Error:', err.response?.status, err.response?.data);
+                console.error('Check Order Error:', err.message);
                 setError(err.response?.data?.message || 'Failed to check order: ' + err.message);
                 toast.error(err.response?.data?.message || 'Failed to check order: ' + err.message, { position: 'top-right', autoClose: 3000 });
             } finally {
@@ -75,8 +74,8 @@ const Order = () => {
     };
 
     const handleAddAddress = async () => {
-        const accessToken = Cookies.get('accessToken');
-        if (!accessToken) {
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders.accessToken) {
             setAddressError('Please log in to add an address.');
             toast.error('Please log in to add an address.', { position: 'top-right', autoClose: 3000 });
             return;
@@ -96,7 +95,7 @@ const Order = () => {
         setAddressError(null);
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/address/add`,
+                `${API_URL}/address/add`,
                 {
                     country: addressForm.country,
                     city: addressForm.city,
@@ -107,12 +106,11 @@ const Order = () => {
                     addressLabel: addressForm.addressLabel || undefined,
                     notes: addressForm.notes || undefined,
                 },
-                { headers: { accessToken: `accessToken_${accessToken}` } }
+                { headers: authHeaders }
             );
-            console.log('Add Address Response:', response.data);
             setOrderDetails((prev) => ({
                 ...prev,
-                addresses: [...prev.addresses, response.data.address],
+                addresses: [...(prev.addresses || []), response.data.address],
             }));
             setSelectedAddressID(response.data.address._id);
             setIsModalOpen(false);
@@ -128,7 +126,7 @@ const Order = () => {
             });
             toast.success('Address added successfully!', { position: 'top-right', autoClose: 3000 });
         } catch (err) {
-            console.log('Add Address Error:', err.response?.status, err.response?.data);
+            console.error('Add Address Error:', err.message);
             setAddressError(err.response?.data?.message || 'Failed to add address: ' + err.message);
             toast.error(err.response?.data?.message || 'Failed to add address: ' + err.message, { position: 'top-right', autoClose: 3000 });
         } finally {
@@ -137,8 +135,8 @@ const Order = () => {
     };
 
     const handleCreateOrder = async () => {
-        const accessToken = Cookies.get('accessToken');
-        if (!accessToken) {
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders.accessToken) {
             setError('Please log in to create an order.');
             toast.error('Please log in to create an order.', { position: 'top-right', autoClose: 3000 });
             return;
@@ -157,24 +155,37 @@ const Order = () => {
         setOrderLoading(true);
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/order/cart`,
+                `${API_URL}/order/cart`,
                 {
                     shippingAddressID: selectedAddressID,
                     contactNumber,
                     paymentMethod,
                     couponCode: couponCode || null,
                 },
-                { headers: { accessToken: `accessToken_${accessToken}` } }
+                { headers: authHeaders }
             );
-            console.log('Create Order Response:', response.data);
-            // Clear cart
-            await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/cart/clear`, {
-                headers: { accessToken: `accessToken_${accessToken}` },
-            });
+
+            // If payment method is stripe and payment link was provided, redirect
+            if (paymentMethod === 'stripe' && response.data.order?._id) {
+                try {
+                    const stripeRes = await axios.post(
+                        `${API_URL}/order/stripe/${response.data.order._id}`,
+                        {},
+                        { headers: authHeaders }
+                    );
+                    if (stripeRes.data?.checkOutSession?.url) {
+                        window.location.href = stripeRes.data.checkOutSession.url;
+                        return;
+                    }
+                } catch (stripeErr) {
+                    console.warn("Stripe checkout error:", stripeErr.message);
+                }
+            }
+
             toast.success('Order created successfully!', { position: 'top-right', autoClose: 3000 });
             navigate('/orders');
         } catch (err) {
-            console.log('Create Order Error:', err.response?.status, err.response?.data);
+            console.error('Create Order Error:', err.message);
             setError(err.response?.data?.message || 'Failed to create order: ' + err.message);
             toast.error(err.response?.data?.message || 'Failed to create order: ' + err.message, { position: 'top-right', autoClose: 3000 });
         } finally {

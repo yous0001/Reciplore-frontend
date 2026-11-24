@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import RecipeSearchBar from '../components/RecipeSearchBar'; // Adjust path if needed
+import RecipeSearchBar from '../components/RecipeSearchBar';
+import { API_URL, getAuthHeaders } from '../store/authStore';
 
 export default function SearchWithAi() {
     const { query } = useParams();
@@ -16,28 +17,28 @@ export default function SearchWithAi() {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/ai/serach-ai`, {
+            const response = await axios.post(`${API_URL}/ai/search-ai`, {
                 ingredients,
+            }, {
+                headers: getAuthHeaders()
             });
-            console.log('Search API Response:', response.data); // Debug log
-            if (response.data.message === 'Recipe suggestions retrieved successfully') {
+            console.log('Search API Response:', response.data);
+            if (response.data.message === 'Recipe suggestions retrieved successfully' || response.data.enhancedRecipes) {
+                const list = response.data.enhancedRecipes || [];
                 // Deduplicate recipes by originalTitle (or _id if available)
-                const uniqueRecipes = response.data.enhancedRecipes.reduce((acc, recipe, index) => {
-                    const key = recipe._id || recipe.originalTitle || `recipe-${index}`; // Fallback to index
+                const uniqueRecipes = list.reduce((acc, recipe, index) => {
+                    const key = recipe._id || recipe.originalTitle || `recipe-${index}`;
                     if (!acc.some((r) => (r._id || r.originalTitle || `recipe-${index}`) === key)) {
                         acc.push(recipe);
-                    } else {
-                        console.log(`Duplicate recipe detected: ${recipe.recipeJson.title} with key ${key}`);
                     }
                     return acc;
                 }, []);
-                console.log('Unique Recipes:', uniqueRecipes); // Debug log
                 setRecipes(uniqueRecipes);
             } else {
                 setError(`Failed to load recipes: ${response.data.message || 'Invalid response'}`);
             }
         } catch (err) {
-            setError(`Error fetching recipes: ${err.message}`);
+            setError(`Error fetching recipes: ${err.response?.data?.message || err.message}`);
             console.error('Axios Error:', err.response?.data, err.response?.status);
         } finally {
             setLoading(false);
@@ -132,16 +133,19 @@ export default function SearchWithAi() {
                             onClick={() => handleCardClick(recipe.originalTitle)}
                         >
                             <img
-                                src={recipe.image.imageUrl}
-                                alt={recipe.recipeJson.title}
+                                src={recipe.image?.imageUrl || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&w=600&q=80'}
+                                alt={recipe.recipeJson?.title || 'Recipe'}
                                 className="w-full h-48 object-cover"
+                                onError={(e) => {
+                                    e.target.src = 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&w=600&q=80';
+                                }}
                             />
                             <div className="p-4">
                                 <h3 className="text-xl font-semibold text-gray-800 truncate">
-                                    {recipe.recipeJson.title}
+                                    {recipe.recipeJson?.title || recipe.originalTitle}
                                 </h3>
                                 <p className="text-gray-600 text-sm mt-1">
-                                    {recipe.recipeJson.overview.cuisine} • {recipe.recipeJson.overview.totaltime}
+                                    {recipe.recipeJson?.overview?.cuisine || 'Custom'} • {recipe.recipeJson?.overview?.totaltime || '30 mins'}
                                 </p>
                             </div>
                         </motion.div>

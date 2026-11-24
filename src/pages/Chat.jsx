@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { API_URL, getAuthHeaders } from '../store/authStore';
 import "./Chat.css";
 const Chat = () => {
   const [currentMode, setCurrentMode] = useState('ingredients');
@@ -35,13 +36,15 @@ const Chat = () => {
 
     try {
       const endpoint = currentMode === 'ingredients'
-        ? `${import.meta.env.VITE_BACKEND_URL}/ai/chat/ingredients`
-        : `${import.meta.env.VITE_BACKEND_URL}/ai/chat/mood`;
+        ? `${API_URL}/ai/chat/ingredients`
+        : `${API_URL}/ai/chat/mood`;
       const payload = currentMode === 'ingredients'
         ? { ingredients: ingredients.trim() }
         : { mood: mood.trim() };
 
-      const response = await axios.post(endpoint, payload);
+      const response = await axios.post(endpoint, payload, {
+        headers: getAuthHeaders()
+      });
       
       const { recipeJson: recipe, image: url } = response.data;
       setRecipeData(recipe);

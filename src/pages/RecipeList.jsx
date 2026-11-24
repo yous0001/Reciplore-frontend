@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { useAuthStore } from '../store/authStore';
+import { useAuthStore, API_URL, getAuthHeaders } from '../store/authStore';
 import RecipeCard from '../components/RecipeCard';
-import Cookies from 'js-cookie';
+import { RecipeCardSkeleton } from '../components/LoadingSpinner';
 import { debounce } from 'lodash';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -39,32 +39,18 @@ const RecipeList = () => {
     // Fetch categories for the filter dropdown
     const fetchCategories = async () => {
         try {
-            const accessToken = Cookies.get('accessToken');
-            const config = accessToken
-                ? { headers: { accessToken: `accessToken_${accessToken}` } }
-                : {};
-
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/category/`, config);
+            const response = await axios.get(`${API_URL}/category/`, { headers: getAuthHeaders() });
             setCategories(response.data.categories || []);
         } catch (err) {
             console.error('Failed to fetch categories:', err);
         }
     };
 
-    // Fetch countries from API - based on the provided response structure
+    // Fetch countries from API
     const fetchCountries = async () => {
         try {
-            const accessToken = Cookies.get('accessToken');
-            const config = accessToken
-                ? { headers: { accessToken: `accessToken_${accessToken}` } }
-                : {};
-
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/country/`, config);
-
-            // Extract country names from the API response
-            // Based on the structure: { countries: [{ name: "Country1" }, { name: "Country2" }, ...] }
+            const response = await axios.get(`${API_URL}/country/`, { headers: getAuthHeaders() });
             const countryData = response.data.countries || [];
-
             setCountries(countryData);
         } catch (err) {
             console.error('Failed to fetch countries:', err);
@@ -101,23 +87,22 @@ const RecipeList = () => {
 
     // Create a stable debounced function with useCallback
     const debouncedFetchRecipes = useCallback(
-        debounce((params, accessToken) => {
-            fetchRecipes(params, accessToken);
-        }, 500),
+        debounce((params) => {
+            fetchRecipes(params);
+        }, 400),
         []
     );
 
-    const fetchRecipes = async (params, accessToken) => {
+    const fetchRecipes = async (params) => {
         setLoading(true);
         setError(null);
 
         try {
-            // Conditionally add auth header
-            const config = accessToken
-                ? { headers: { accessToken: `accessToken_${accessToken}` }, params }
-                : { params };
-
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/recipe/list`, config);
+            const response = await axios.get(`${API_URL}/recipe/list`, {
+                headers: getAuthHeaders(),
+                params,
+                timeout: 8000,
+            });
 
             const recipesData = response.data.recipes?.docs || [];
             const totalItems = response.data.recipes?.totalDocs || 0;
@@ -180,15 +165,15 @@ const RecipeList = () => {
         // Skip the initial mount to prevent double fetch
         if (isInitialMount.current) {
             isInitialMount.current = false;
-            fetchRecipes(params, accessToken);
+            fetchRecipes(params);
             return;
         }
 
         // Use debounced fetch for search/filter changes, immediate fetch for page changes
         if (searchTerm || filters.minRating || filters.maxRating || filters.minViews || filters.maxViews || filters.category || filters.country) {
-            debouncedFetchRecipes(params, accessToken);
+            debouncedFetchRecipes(params);
         } else {
-            fetchRecipes(params, accessToken);
+            fetchRecipes(params);
         }
     }, [activeCategory, filters, searchTerm, page, limit, debouncedFetchRecipes]);
 

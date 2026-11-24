@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
+import { API_URL, getAuthHeaders } from '../store/authStore';
 
 export default function RecommendationDetails() {
     const { name } = useParams();
@@ -14,15 +15,17 @@ export default function RecommendationDetails() {
     useEffect(() => {
         const fetchRecommendation = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/recommendation/${name}`);
-                console.log('Recommendation API Response:', response.data); // Debug log
+                const response = await axios.get(`${API_URL}/recommendation/${encodeURIComponent(name)}`, {
+                    headers: getAuthHeaders()
+                });
+                console.log('Recommendation API Response:', response.data);
                 if (response.data.success || response.data.sucess || response.data.recommendation) {
                     setRecipe(response.data.recommendation);
                 } else {
                     setError(`Failed to load recipe details: ${response.data.message || 'Invalid response'}`);
                 }
             } catch (err) {
-                setError(`Error fetching recipe: ${err.message}`);
+                setError(`Error fetching recipe: ${err.response?.data?.message || err.message}`);
                 console.error('Axios Error:', err.response?.data, err.response?.status);
             } finally {
                 setLoading(false);
@@ -79,13 +82,16 @@ export default function RecommendationDetails() {
                         Back
                     </button>
                     <img
-                        src={image.imageUrl}
-                        alt={recipeJson.title}
+                        src={image?.imageUrl || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&w=1200&q=80'}
+                        alt={recipeJson?.title || 'Recipe'}
                         className="w-full h-80 object-cover"
+                        onError={(e) => {
+                            e.target.src = 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&w=1200&q=80';
+                        }}
                     />
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
                         <h1 className="text-4xl font-serif font-bold text-white drop-shadow-md">
-                            {recipeJson.title}
+                            {recipeJson?.title}
                         </h1>
                     </div>
                 </div>
@@ -95,19 +101,19 @@ export default function RecommendationDetails() {
                     {/* Overview */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                         <div>
-                            <p className="text-gray-700 text-lg"><strong>Cuisine:</strong> {recipeJson.overview.cuisine}</p>
-                            <p className="text-gray-700 text-lg"><strong>Difficulty:</strong> {recipeJson.overview.difficulty}</p>
-                            <p className="text-gray-700 text-lg"><strong>Servings:</strong> {recipeJson.overview.servings}</p>
+                            <p className="text-gray-700 text-lg"><strong>Cuisine:</strong> {recipeJson?.overview?.cuisine || 'N/A'}</p>
+                            <p className="text-gray-700 text-lg"><strong>Difficulty:</strong> {recipeJson?.overview?.difficulty || 'N/A'}</p>
+                            <p className="text-gray-700 text-lg"><strong>Servings:</strong> {recipeJson?.overview?.servings || 'N/A'}</p>
                         </div>
                         <div>
-                            <p className="text-gray-700 text-lg"><strong>Prep Time:</strong> {recipeJson.overview.preptime}</p>
-                            <p className="text-gray-700 text-lg"><strong>Cook Time:</strong> {recipeJson.overview.cooktime}</p>
-                            <p className="text-gray-700 text-lg"><strong>Total Time:</strong> {recipeJson.overview.totaltime}</p>
+                            <p className="text-gray-700 text-lg"><strong>Prep Time:</strong> {recipeJson?.overview?.preptime || 'N/A'}</p>
+                            <p className="text-gray-700 text-lg"><strong>Cook Time:</strong> {recipeJson?.overview?.cooktime || 'N/A'}</p>
+                            <p className="text-gray-700 text-lg"><strong>Total Time:</strong> {recipeJson?.overview?.totaltime || 'N/A'}</p>
                         </div>
                     </div>
 
                     {/* Description */}
-                    <p className="text-gray-700 text-lg leading-relaxed mb-8">{recipeJson.description}</p>
+                    <p className="text-gray-700 text-lg leading-relaxed mb-8">{recipeJson?.description}</p>
 
                     {/* Ingredients */}
                     <div className="mb-8">

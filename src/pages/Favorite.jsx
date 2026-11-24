@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Cookies from 'js-cookie';
 import { FaHeart } from 'react-icons/fa';
 import slugify from 'slugify';
+import { API_URL, getAuthHeaders } from '../store/authStore';
 
 const Favorite = () => {
     const navigate = useNavigate();
@@ -16,27 +16,25 @@ const Favorite = () => {
         const fetchFavorites = async () => {
             setLoading(true);
             setError(null);
-            const accessToken = Cookies.get('accessToken');
-            if (!accessToken) {
+            const authHeaders = getAuthHeaders();
+            if (!authHeaders.accessToken) {
                 setError('Please log in to view your favorites.');
                 setLoading(false);
                 return;
             }
 
             try {
-                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/auth/get-favourite`, {
-                    headers: { accessToken: `accessToken_${accessToken}` },
+                const response = await axios.get(`${API_URL}/auth/get-favourite`, {
+                    headers: authHeaders,
                 });
-                console.log('API Response:', response.data);
-                // Generate slug for each recipe if not provided
                 const recipes = (response.data.recipes?.docs || []).map((recipe) => ({
                     ...recipe,
                     slug: recipe.slug || slugify(recipe.name, { replacement: '_', lower: true }),
                 }));
                 setFavorites(recipes);
             } catch (err) {
-                console.log('API Error:', err.response?.status, err.response?.data);
-                setError('Failed to fetch favorites: ' + err.message);
+                console.error('API Error:', err.message);
+                setError('Failed to fetch favorites: ' + (err.response?.data?.message || err.message));
             } finally {
                 setLoading(false);
             }
@@ -46,11 +44,11 @@ const Favorite = () => {
     }, []);
 
     const handleToggleFavorite = async (recipeId, e) => {
-        e.stopPropagation(); // Prevent navigation when toggling
+        e.stopPropagation();
         setToggleLoading((prev) => ({ ...prev, [recipeId]: true }));
         setError(null);
-        const accessToken = Cookies.get('accessToken');
-        if (!accessToken) {
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders.accessToken) {
             setError('Please log in to favorite recipes.');
             setToggleLoading((prev) => ({ ...prev, [recipeId]: false }));
             return;
@@ -58,18 +56,14 @@ const Favorite = () => {
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/auth/toogle-favourite/${recipeId}`,
+                `${API_URL}/auth/toggle-favourite/${recipeId}`,
                 {},
-                {
-                    headers: { accessToken: `accessToken_${accessToken}` },
-                }
+                { headers: authHeaders }
             );
-            console.log('Toggle Response:', response.data);
-            const isAdded = response.data.message.includes('added');
+            const isAdded = response.data.message?.includes('added');
             if (isAdded) {
-                // Refetch favorites to get updated recipe details
-                const favoritesResponse = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/auth/get-favourite`, {
-                    headers: { accessToken: `accessToken_${accessToken}` },
+                const favoritesResponse = await axios.get(`${API_URL}/auth/get-favourite`, {
+                    headers: authHeaders,
                 });
                 const recipes = (favoritesResponse.data.recipes?.docs || []).map((recipe) => ({
                     ...recipe,
@@ -77,12 +71,11 @@ const Favorite = () => {
                 }));
                 setFavorites(recipes);
             } else {
-                // Remove the recipe from favorites
-                setFavorites((prevFavorites) => prevFavorites.filter((item) => item._id !== recipeId));
+                setFavorites((prev) => prev.filter((recipe) => recipe._id !== recipeId));
             }
         } catch (err) {
-            console.log('Toggle Error:', err.response?.status, err.response?.data);
-            setError('Failed to toggle favorite: ' + err.message);
+            console.error('Toggle Error:', err.message);
+            setError(err.response?.data?.message || 'Failed to toggle favorite');
         } finally {
             setToggleLoading((prev) => ({ ...prev, [recipeId]: false }));
         }

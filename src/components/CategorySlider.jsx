@@ -1,30 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import Cookies from 'js-cookie';
+import { API_URL, getAuthHeaders } from '../store/authStore';
 
-const FALLBACK_IMAGE = 'https://via.placeholder.com/150?text=Category';
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=300&q=80';
 
 const CategorySlider = () => {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const navigate = useNavigate();
 
     const fetchCategories = async () => {
         try {
-            const accessToken = Cookies.get('accessToken');
-            const config = accessToken 
-                ? { headers: { accessToken: `accessToken_${accessToken}` } } 
-                : {};
-            
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/category/`, config);
-            console.log('Categories API Response:', response.data);
+            const response = await axios.get(`${API_URL}/category/`, {
+                headers: getAuthHeaders(),
+                timeout: 5000,
+            });
             const categoriesData = response.data.categories || [];
             setCategories(categoriesData);
         } catch (err) {
-            console.error('Categories API Error:', err.response?.status, err.response?.data);
-            setError('Failed to fetch categories: ' + err.message);
+            console.warn('Failed to fetch categories for slider:', err.message);
         } finally {
             setLoading(false);
         }
@@ -38,63 +33,68 @@ const CategorySlider = () => {
         fetchCategories();
     }, []);
 
-    const handleImageError = (e, categoryName) => {
-        console.error(`Image failed to load for category ${categoryName}:`, e.target.src);
+    const handleImageError = (e) => {
         e.target.src = FALLBACK_IMAGE;
     };
 
-    if (loading) return <div className="text-center text-gray-700 py-5">Loading categories...</div>;
-    if (error) return <div className="text-center text-red-500 py-5">{error}</div>;
-    if (categories.length === 0) return <div className="text-center text-gray-500 py-5">No categories available</div>;
+    if (loading) {
+        return (
+            <div className="w-11/12 mx-auto py-6">
+                <div className="flex space-x-6 overflow-hidden">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="flex-shrink-0 flex flex-col items-center space-y-2 animate-pulse">
+                            <div className="w-24 h-24 rounded-full bg-gray-200"></div>
+                            <div className="w-16 h-3 bg-gray-200 rounded"></div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    if (categories.length === 0) return null;
 
     return (
-        <div className="relative w-full overflow-hidden py-6 bg-gradient-to-br from-gray-50 to-white">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Recipe Categories</h2>
+        <div className="relative w-11/12 mx-auto overflow-hidden py-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Explore Popular Categories</h2>
             
             {/* Slider container */}
-            <div className="relative w-full h-40 overflow-hidden">
+            <div className="relative w-full h-36 overflow-hidden">
                 {/* Slider track with animation */}
                 <div className="absolute top-0 left-0 flex space-x-6 animate-slide">
-                    {/* Double the categories for seamless looping */}
                     {[...categories, ...categories].map((category, index) => (
                         <div
                             key={`${category._id}-${index}`}
-                            className="flex-shrink-0 w-32 h-32 group relative flex flex-col items-center cursor-pointer transition-transform duration-300 transform hover:scale-105"
+                            className="flex-shrink-0 w-28 h-32 group relative flex flex-col items-center cursor-pointer transition-transform duration-300 transform hover:scale-105"
                             role="button"
                             tabIndex={0}
                             aria-label={`Select ${category.name} category`}
                             onClick={() => handleCategoryClick(category)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleCategoryClick(category)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleCategoryClick(category)}
                         >
-                            <div className="relative w-28 h-28 rounded-full overflow-hidden shadow-lg bg-gradient-to-br from-orange-100 to-orange-300">
+                            <div className="relative w-24 h-24 rounded-full overflow-hidden shadow-md bg-orange-100 border-2 border-orange-200">
                                 <img
                                     src={category.image?.secure_url || FALLBACK_IMAGE}
                                     alt={category.name}
                                     className="w-full h-full object-cover rounded-full"
-                                    onError={(e) => handleImageError(e, category.name)}
+                                    onError={handleImageError}
                                 />
-                                <div className="absolute inset-0 bg-transparent bg-opacity-10 group-hover:bg-opacity-20 transition-opacity duration-300 rounded-full"></div>
                             </div>
-                            <h3 className="mt-2 text-sm font-semibold text-gray-900 text-center line-clamp-2">
-                                {category.name}
+                            <h3 className="mt-2 text-xs font-semibold text-gray-800 text-center capitalize truncate w-full">
+                                {category.name.replace(/_/g, " ")}
                             </h3>
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* Custom CSS for the animation */}
             <style>{`
                 @keyframes slide {
-                    0% {
-                        transform: translateX(0);
-                    }
-                    100% {
-                        transform: translateX(-50%);
-                    }
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-50%); }
                 }
                 .animate-slide {
-                    animation: slide 30s linear infinite;
+                    animation: slide 25s linear infinite;
                 }
                 .animate-slide:hover {
                     animation-play-state: paused;

@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
 import { FaArrowLeft, FaCreditCard, FaTimesCircle, FaMoneyBillWave, FaTag } from 'react-icons/fa';
 import { BsStripe } from 'react-icons/bs';
+import { API_URL, getAuthHeaders } from '../store/authStore';
 
 const containerVariants = {
     hidden: { opacity: 0, y: 50 },
@@ -38,8 +39,8 @@ const OrderDetails = () => {
         const fetchOrder = async () => {
             setLoading(true);
             setError(null);
-            const accessToken = Cookies.get('accessToken');
-            if (!accessToken) {
+            const authHeaders = getAuthHeaders();
+            if (!authHeaders.accessToken) {
                 setError('Please log in to view order details.');
                 setLoading(false);
                 toast.error('Please log in to view order details.', { position: 'top-right', autoClose: 3000 });
@@ -47,8 +48,8 @@ const OrderDetails = () => {
             }
 
             try {
-                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/order/${orderId}`, {
-                    headers: { accessToken: `accessToken_${accessToken}` },
+                const response = await axios.get(`${API_URL}/order/${orderId}`, {
+                    headers: authHeaders,
                 });
                 console.log('Order Details API Response:', response.data);
                 setOrder(response.data.order || null);
@@ -65,15 +66,19 @@ const OrderDetails = () => {
     }, [orderId]);
 
     const handlePayOrder = async () => {
-        const accessToken = Cookies.get('accessToken');
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders.accessToken) {
+            toast.error('Please log in to proceed with payment.', { position: 'top-right', autoClose: 3000 });
+            return;
+        }
         setActionLoading('pay');
         setError(null);
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/order/stripe/${orderId}`,
+                `${API_URL}/order/stripe/${orderId}`,
                 {},
-                { headers: { accessToken: `accessToken_${accessToken}` } }
+                { headers: authHeaders }
             );
             console.log('Pay Order Response:', response.data);
             if (response.data.checkOutSession?.url) {
@@ -91,15 +96,19 @@ const OrderDetails = () => {
     };
 
     const handleCancelOrder = async () => {
-        const accessToken = Cookies.get('accessToken');
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders.accessToken) {
+            toast.error('Please log in to cancel order.', { position: 'top-right', autoClose: 3000 });
+            return;
+        }
         setActionLoading('cancel');
         setError(null);
 
         try {
             const response = await axios.put(
-                `${import.meta.env.VITE_BACKEND_URL}/order/cancel/${orderId}`,
+                `${API_URL}/order/cancel/${orderId}`,
                 {},
-                { headers: { accessToken: `accessToken_${accessToken}` } }
+                { headers: authHeaders }
             );
             console.log('Cancel Order Response:', response.data);
             setOrder((prev) => ({ ...prev, orderStatus: 'cancelled' }));

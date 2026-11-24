@@ -8,4 +8,20 @@ export default defineConfig({
     react(),
     tailwindcss()
   ],
+  server: {
+    port: 5173,
+    host: true
+  },
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['framer-motion', 'lucide-react', 'react-icons'],
+          utils: ['axios', 'js-cookie', 'slugify', 'zustand']
+        }
+      }
+    }
+  }
 })

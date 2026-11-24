@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Cookies from 'js-cookie';
 import slugify from 'slugify';
+import { API_URL, getAuthHeaders } from '../store/authStore';
 
 const IngredientCard = ({ ingredient }) => {
     const navigate = useNavigate();
@@ -17,8 +17,8 @@ const IngredientCard = ({ ingredient }) => {
     };
 
     const handleToggleCart = async () => {
-        const accessToken = Cookies.get('accessToken');
-        if (!accessToken) {
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders.accessToken) {
             toast.error('Please log in to manage cart.', { position: 'top-right', autoClose: 3000 });
             return;
         }
@@ -28,24 +28,24 @@ const IngredientCard = ({ ingredient }) => {
             if (inCart) {
                 // Remove from cart
                 await axios.put(
-                    `${import.meta.env.VITE_BACKEND_URL}/cart/remove/${ingredient._id}`,
+                    `${API_URL}/cart/remove/${ingredient._id}`,
                     {},
-                    { headers: { accessToken: `accessToken_${accessToken}` } }
+                    { headers: authHeaders }
                 );
                 toast.success('Ingredient removed from cart!', { position: 'top-right', autoClose: 3000 });
             } else {
                 // Add to cart
                 await axios.post(
-                    `${import.meta.env.VITE_BACKEND_URL}/cart/add`,
+                    `${API_URL}/cart/add`,
                     { ingredientId: ingredient._id, quantity: 1 },
-                    { headers: { accessToken: `accessToken_${accessToken}` } }
+                    { headers: authHeaders }
                 );
                 toast.success('Ingredient added to cart!', { position: 'top-right', autoClose: 3000 });
             }
             setInCart(!inCart);
         } catch (err) {
             console.error('Cart Error:', err.response?.status, err.response?.data);
-            toast.error(`Failed to ${inCart ? 'remove from' : 'add to'} cart: ${err.message}`, {
+            toast.error(`Failed to ${inCart ? 'remove from' : 'add to'} cart: ${err.response?.data?.message || err.message}`, {
                 position: 'top-right',
                 autoClose: 3000,
             });

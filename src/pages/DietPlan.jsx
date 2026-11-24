@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { useAuthStore } from '../store/authStore'; // Adjust path
+import { useAuthStore, API_URL, getAuthHeaders } from '../store/authStore';
 import { FaRuler, FaWeight, FaBirthdayCake, FaPercentage, FaBullseye, FaUtensils, FaMars, FaVenus, FaRunning } from 'react-icons/fa';
 
 const DietPlan = () => {
@@ -44,9 +44,9 @@ const DietPlan = () => {
             return;
         }
 
-        const accessToken = Cookies.get('accessToken');
-        if (!accessToken) {
-            setMessage('No access token available.');
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders.accessToken) {
+            setMessage('Please log in first to generate a personalized diet plan.');
             setLoading(false);
             return;
         }
@@ -63,16 +63,13 @@ const DietPlan = () => {
         };
 
         try {
-            console.log(data);
-            await axios.post(`${import.meta.env.VITE_BACKEND_URL}/ai/diet-plan`, data, {
-                headers: { accessToken: `accessToken_${accessToken}` },
+            await axios.post(`${API_URL}/ai/diet-plan`, data, {
+                headers: authHeaders,
             });
-            console.log('Diet Plan request sent successfully, awaiting email.');
             setMessage('Your diet plan is being generated and will be sent to your email shortly.');
         } catch (err) {
             console.error('Diet Plan API Error:', err.response?.status, err.response?.data);
-            console.error('Diet Plan API Response:', err.stack);
-            setMessage('Failed to generate diet plan: ' + err.message);
+            setMessage('Failed to generate diet plan: ' + (err.response?.data?.message || err.message));
         } finally {
             setLoading(false);
         }

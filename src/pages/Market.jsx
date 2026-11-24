@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { useAuthStore } from '../store/authStore';
+import { useAuthStore, API_URL, getAuthHeaders } from '../store/authStore';
 import IngredientCard from '../components/IngredientCard';
-import Cookies from 'js-cookie';
 import { debounce } from 'lodash';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -44,20 +43,21 @@ const Market = () => {
     }, [filters]);
 
     const debouncedFetchIngredients = useCallback(
-        debounce((params, accessToken) => {
-            fetchIngredients(params, accessToken);
-        }, 500),
+        debounce((params) => {
+            fetchIngredients(params);
+        }, 400),
         []
     );
 
-    const fetchIngredients = async (params, accessToken) => {
+    const fetchIngredients = async (params) => {
         setLoading(true);
         setError(null);
 
         try {
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/ingredient/list`, {
-                headers: { accessToken: `accessToken_${accessToken}` },
+            const response = await axios.get(`${API_URL}/ingredient/list`, {
+                headers: getAuthHeaders(),
                 params,
+                timeout: 8000,
             });
 
             console.log('API Response:', response.data);
@@ -165,14 +165,14 @@ const Market = () => {
         // Skip the initial mount to prevent double fetch
         if (isInitialMount.current) {
             isInitialMount.current = false;
-            fetchIngredients(params, accessToken);
+            fetchIngredients(params);
             return;
         }
 
         if (searchTerm || Object.values(filters).some((v) => v)) {
-            debouncedFetchIngredients(params, accessToken);
+            debouncedFetchIngredients(params);
         } else {
-            fetchIngredients(params, accessToken);
+            fetchIngredients(params);
         }
     }, [activeSort, filters, searchTerm, page, limit, debouncedFetchIngredients]);
 

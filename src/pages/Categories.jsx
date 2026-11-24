@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { useAuthStore } from '../store/authStore'; // Adjust path
-import RecipeCard from '../components/RecipeCard'; // Adjust path
-import Cookies from 'js-cookie';
+import RecipeCard from '../components/RecipeCard';
 import { debounce } from 'lodash';
+import { API_URL, getAuthHeaders } from '../store/authStore';
 
 // Fallback image URL (replace with your own if needed)
 const FALLBACK_IMAGE = 'https://via.placeholder.com/150?text=Category';
@@ -30,28 +29,23 @@ const Categories = () => {
 
     // Debounced fetch for search and filters
     const debouncedFetchRecipes = useCallback(
-        debounce((params, accessToken) => {
-            fetchRecipes(params, accessToken);
-        }, 500),
+        debounce((params) => {
+            fetchRecipes(params);
+        }, 400),
         []
     );
 
     // Fetch categories
-    const fetchCategories = async (accessToken) => {
+    const fetchCategories = async () => {
         try {
-            const headers = (accessToken) ? { accessToken: `accessToken_${accessToken}` } : {}
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/category/`, {
-                headers,
+            const response = await axios.get(`${API_URL}/category/`, {
+                headers: getAuthHeaders(),
+                timeout: 5000,
             });
-            console.log('Categories API Response:', response.data); // Debug
             const categoriesData = response.data.categories || [];
-            // Validate image URLs
-            categoriesData.forEach((cat) => {
-                console.log(`Category ${cat.name} Image URL:`, cat.image?.secure_url); // Debug
-            });
             setCategories(categoriesData);
         } catch (err) {
-            console.error('Categories API Error:', err.response?.status, err.response?.data);
+            console.error('Categories API Error:', err.message);
             setError('Failed to fetch categories: ' + err.message);
         } finally {
             setLoading(false);
@@ -59,25 +53,23 @@ const Categories = () => {
     };
 
     // Fetch recipes for a category
-    const fetchRecipes = async (params, accessToken) => {
+    const fetchRecipes = async (params) => {
         setLoading(true);
         setError(null);
 
         try {
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/recipe/list`, {
-                headers:(accessToken)? { accessToken: `accessToken_${accessToken}` }:{},
+            const response = await axios.get(`${API_URL}/recipe/list`, {
+                headers: getAuthHeaders(),
                 params,
+                timeout: 8000,
             });
-            console.log('Recipes API Response:', response.data); // Debug
             const recipesData = response.data.recipes?.docs || [];
-            const totalItems = response.data.recipes?.total || 0;
-            const calculatedTotalPages = Math.max(1, Math.ceil(totalItems / params.limit));
+            const calculatedTotalPages = response.data.recipes?.totalPages || 1;
 
             setRecipes(recipesData);
             setTotalPages(calculatedTotalPages);
-            console.log('Page:', params.page, 'Total Pages:', calculatedTotalPages); // Debug
         } catch (err) {
-            console.error('Recipes API Error:', err.response?.status, err.response?.data);
+            console.error('Recipes API Error:', err.message);
             setError('Failed to fetch recipes: ' + err.message);
             setRecipes([]);
             setTotalPages(0);
@@ -87,10 +79,8 @@ const Categories = () => {
     };
 
     useEffect(() => {
-        const accessToken = Cookies.get('accessToken');
-
         if (!selectedCategory) {
-            fetchCategories(accessToken);
+            fetchCategories();
         } else {
             const filterParams = {};
             if (filters.minRating) filterParams['Average_rating[gte]'] = filters.minRating;
@@ -123,9 +113,9 @@ const Categories = () => {
             };
 
             if (searchTerm || filters.minRating || filters.maxRating || filters.minViews || filters.maxViews) {
-                debouncedFetchRecipes(params, accessToken);
+                debouncedFetchRecipes(params);
             } else {
-                fetchRecipes(params, accessToken);
+                fetchRecipes(params);
             }
         }
     }, [selectedCategory, activeSort, filters, searchTerm, page, limit, debouncedFetchRecipes]);

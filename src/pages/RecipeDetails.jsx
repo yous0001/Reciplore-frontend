@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Cookies from 'js-cookie';
-import slugify from 'slugify';
 import { toast } from 'react-toastify';
 import { FaHeart, FaRegHeart, FaStar } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import { API_URL, getAuthHeaders, useAuthStore } from '../store/authStore';
 
 const RecipeDetails = () => {
     const { slug } = useParams();
@@ -24,40 +23,47 @@ const RecipeDetails = () => {
         const fetchRecipeAndFavorites = async () => {
             setLoading(true);
             setError(null);
-            console.log('Fetching recipe for slug:', slug);
 
             try {
+                const headers = getAuthHeaders();
                 // Fetch recipe details
-                const recipeResponse = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/recipe/get`, {
+                const recipeResponse = await axios.get(`${API_URL}/recipe/get`, {
                     params: { slug },
+                    headers,
                 });
-                console.log('API Response - recipe.ingredients:', recipeResponse.data.recipe.ingredients);
-                setRecipe(recipeResponse.data.recipe);
+                const fetchedRecipe = recipeResponse.data.recipe;
+                setRecipe(fetchedRecipe);
 
-                // Fetch favorite recipes
-                const accessToken = Cookies.get('accessToken');
-                if (accessToken) {
-                    const favoritesResponse = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/auth/get-favourite`, {
-                        headers: { accessToken: `accessToken_${accessToken}` },
-                    });
-                    console.log('Favorites API Response:', favoritesResponse.data);
-                    const favorites = favoritesResponse.data.recipes?.docs || [];
-                    setIsFavourite(favorites.some((fav) => fav._id === recipeResponse.data.recipe._id));
+                // Fetch reviews (viewable by anyone)
+                if (fetchedRecipe?._id) {
+                    try {
+                        const reviewsResponse = await axios.get(`${API_URL}/review/`, {
+                            params: { recipeId: fetchedRecipe._id },
+                            headers,
+                        });
+                        setReviews(reviewsResponse.data.reviews || []);
+                    } catch (revErr) {
+                        console.warn('Could not load reviews:', revErr.message);
+                    }
+                }
 
-                    // Fetch reviews
-                    const reviewsResponse = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/review/`, {
-                        params: { recipeId: recipeResponse.data.recipe._id },
-                        headers: { accessToken: `accessToken_${accessToken}` },
-                    });
-                    console.log('Reviews API Response:', reviewsResponse.data);
-                    setReviews(reviewsResponse.data.reviews || []);
+                // Favorite status
+                if (headers.accessToken && fetchedRecipe?._id) {
+                    try {
+                        const favoritesResponse = await axios.get(`${API_URL}/auth/get-favourite`, {
+                            headers,
+                        });
+                        const favorites = favoritesResponse.data.recipes?.docs || [];
+                        setIsFavourite(favorites.some((fav) => fav._id === fetchedRecipe._id));
+                    } catch {
+                        setIsFavourite(fetchedRecipe.isFavourite || false);
+                    }
                 } else {
-                    setIsFavourite(recipeResponse.data.recipe.isFavourite || false);
-                    setReviews([]); // No reviews if not logged in
+                    setIsFavourite(fetchedRecipe?.isFavourite || false);
                 }
             } catch (err) {
-                console.log('API Error:', err.response?.status, err.response?.data);
-                setError('Failed to fetch recipe, favorites, or reviews: ' + err.message);
+                console.error('API Error in RecipeDetails:', err.message);
+                setError('Failed to fetch recipe details: ' + (err.response?.data?.message || err.message));
             } finally {
                 setLoading(false);
             }
@@ -72,31 +78,28 @@ const RecipeDetails = () => {
         const previousFavouriteState = isFavourite;
         setIsFavourite(!isFavourite); // Optimistic update
 
-        const accessToken = Cookies.get('accessToken');
-        if (!accessToken) {
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders.accessToken) {
             setError('Please log in to favorite recipes.');
             toast.error('Please log in to favorite recipes.', { position: 'top-right', autoClose: 3000 });
-            setIsFavourite(previousFavouriteState); // Revert optimistic update
+            setIsFavourite(previousFavouriteState);
             setToggleLoading(false);
             return;
         }
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/auth/toggle-favourite/${recipe._id}`,
+                `${API_URL}/auth/toggle-favourite/${recipe._id}`,
                 {},
-                {
-                    headers: { accessToken: `accessToken_${accessToken}` },
-                }
+                { headers: authHeaders }
             );
-            console.log('Toggle Favourite Response:', response.data);
-            setIsFavourite(response.data.message.includes('added'));
+            setIsFavourite(response.data.message?.includes('added'));
             toast.success(response.data.message, { position: 'top-right', autoClose: 3000 });
         } catch (err) {
-            console.error('Toggle Favourite Error:', err.response?.status, err.response?.data);
-            setError('Failed to toggle favorite: ' + err.message);
-            toast.error('Failed to toggle favorite: ' + err.message, { position: 'top-right', autoClose: 3000 });
-            setIsFavourite(previousFavouriteState); // Revert optimistic update
+            console.error('Toggle Favourite Error:', err.message);
+            setError('Failed to toggle favorite: ' + (err.response?.data?.message || err.message));
+            toast.error('Failed to toggle favorite: ' + (err.response?.data?.message || err.message), { position: 'top-right', autoClose: 3000 });
+            setIsFavourite(previousFavouriteState);
         } finally {
             setToggleLoading(false);
         }
@@ -107,8 +110,8 @@ const RecipeDetails = () => {
         setReviewError(null);
         setReviewLoading(true);
 
-        const accessToken = Cookies.get('accessToken');
-        if (!accessToken) {
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders.accessToken) {
             setReviewError('Please log in to submit a review.');
             toast.error('Please log in to submit a review.', { position: 'top-right', autoClose: 3000 });
             setReviewLoading(false);
@@ -124,24 +127,21 @@ const RecipeDetails = () => {
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/review/add`,
+                `${API_URL}/review/add`,
                 {
                     rate: newReview.rate,
                     comment: newReview.comment,
                     recipeId: recipe._id,
                 },
-                {
-                    headers: { accessToken: `accessToken_${accessToken}` },
-                }
+                { headers: authHeaders }
             );
-            console.log('Review Submit Response:', response.data);
             setReviews((prev) => [response.data.review, ...prev]);
             setNewReview({ rate: 0, comment: '' });
-            toast.success(response.data.message, { position: 'top-right', autoClose: 3000 });
+            toast.success(response.data.message || 'Review added!', { position: 'top-right', autoClose: 3000 });
         } catch (err) {
-            console.error('Review Submit Error:', err.response?.status, err.response?.data);
-            setReviewError(err.response?.data?.message || 'Failed to submit review: ' + err.message);
-            toast.error(err.response?.data?.message || 'Failed to submit review: ' + err.message, { position: 'top-right', autoClose: 3000 });
+            console.error('Review Submit Error:', err.message);
+            setReviewError(err.response?.data?.message || 'Failed to submit review');
+            toast.error(err.response?.data?.message || 'Failed to submit review', { position: 'top-right', autoClose: 3000 });
         } finally {
             setReviewLoading(false);
         }

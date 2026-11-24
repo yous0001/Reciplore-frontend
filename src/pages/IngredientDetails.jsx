@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Cookies from 'js-cookie';
+import { API_URL, getAuthHeaders } from '../store/authStore';
 
 const IngredientDetails = () => {
     const { slug } = useParams();
@@ -17,10 +17,9 @@ const IngredientDetails = () => {
         const fetchIngredient = async () => {
             setLoading(true);
             setError(null);
-            console.log('Fetching ingredient for slug:', slug);
 
             try {
-                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/ingredient/get`, {
+                const response = await axios.get(`${API_URL}/ingredient/get`, {
                     params: { slug },
                 });
                 console.log('API Response:', response.data);
@@ -37,35 +36,39 @@ const IngredientDetails = () => {
     }, [slug]);
 
     const handleAddToCart = async () => {
-        const accessToken = Cookies.get('accessToken');
-        if (!accessToken) {
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders.accessToken) {
             setError('Please log in to add to cart.');
+            toast.error('Please log in to add to cart.');
             return;
         }
 
         try {
             await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/cart/add`,
+                `${API_URL}/cart/add`,
                 {
                     ingredientId: ingredient._id,
                     quantity,
                 },
                 {
-                    headers: { accessToken: `accessToken_${accessToken}` },
+                    headers: authHeaders,
                 }
             );
             toast.success('Ingredient added to cart successfully!', {
                 position: 'top-right',
                 autoClose: 3000,
             });
+            navigate('/cart');
         } catch (err) {
-            console.log('Cart Error:', err.response?.status, err.response?.data);
-            setError('Failed to add to cart: ' + err.message);
+            console.error('Cart Error:', err.message);
+            const msg = err.response?.data?.message || 'Failed to add to cart';
+            setError(msg);
+            toast.error(msg);
         }
     };
 
-    if (loading) return <div className="text-center text-white py-10">Loading...</div>;
-    if (error || !ingredient) return <div className="text-center text-red-500 py-10">{error || 'Ingredient not found'}</div>;
+    if (loading) return <div className="text-center text-gray-700 py-16 font-medium">Loading ingredient details...</div>;
+    if (error || !ingredient) return <div className="text-center text-red-500 py-16">{error || 'Ingredient not found'}</div>;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-orange-200 via-orange-100 to-white overflow-hidden">

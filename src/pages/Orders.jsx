@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Cookies from 'js-cookie';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
 import { FaHome, FaEye, FaCreditCard, FaTimesCircle } from 'react-icons/fa';
+import { API_URL, getAuthHeaders } from '../store/authStore';
 
 const Orders = () => {
     const navigate = useNavigate();
@@ -17,8 +17,8 @@ const Orders = () => {
         const fetchOrders = async () => {
             setLoading(true);
             setError(null);
-            const accessToken = Cookies.get('accessToken');
-            if (!accessToken) {
+            const authHeaders = getAuthHeaders();
+            if (!authHeaders.accessToken) {
                 setError('Please log in to view your orders.');
                 setLoading(false);
                 toast.error('Please log in to view your orders.', { position: 'top-right', autoClose: 3000 });
@@ -26,15 +26,13 @@ const Orders = () => {
             }
 
             try {
-                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/order`, {
-                    headers: { accessToken: `accessToken_${accessToken}` },
+                const response = await axios.get(`${API_URL}/order`, {
+                    headers: authHeaders,
                 });
-                console.log('Orders API Response:', response.data);
                 setOrders(response.data.orders || []);
             } catch (err) {
-                console.log('Orders API Error:', err.response?.status, err.response?.data);
+                console.error('Orders API Error:', err.message);
                 setError(err.response?.data?.message || 'Failed to fetch orders: ' + err.message);
-                toast.error(err.response?.data?.message || 'Failed to fetch orders: ' + err.message, { position: 'top-right', autoClose: 3000 });
             } finally {
                 setLoading(false);
             }
@@ -44,51 +42,47 @@ const Orders = () => {
     }, []);
 
     const handlePayOrder = async (orderId) => {
-        const accessToken = Cookies.get('accessToken');
         setActionLoading((prev) => ({ ...prev, [orderId]: 'pay' }));
         setError(null);
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/order/stripe/${orderId}`,
+                `${API_URL}/order/stripe/${orderId}`,
                 {},
-                { headers: { accessToken: `accessToken_${accessToken}` } }
+                { headers: getAuthHeaders() }
             );
-            console.log('Pay Order Response:', response.data);
             if (response.data.checkOutSession?.url) {
                 window.location.href = response.data.checkOutSession.url;
             } else {
                 throw new Error('No checkout URL provided');
             }
         } catch (err) {
-            console.log('Pay Order Error:', err.response?.status, err.response?.data);
+            console.error('Pay Order Error:', err.message);
             setError(err.response?.data?.message || 'Failed to initiate payment: ' + err.message);
-            toast.error(err.response?.data?.message || 'Failed to initiate payment: ' + err.message, { position: 'top-right', autoClose: 3000 });
+            toast.error(err.response?.data?.message || 'Failed to initiate payment');
         } finally {
             setActionLoading((prev) => ({ ...prev, [orderId]: null }));
         }
     };
 
     const handleCancelOrder = async (orderId) => {
-        const accessToken = Cookies.get('accessToken');
         setActionLoading((prev) => ({ ...prev, [orderId]: 'cancel' }));
         setError(null);
 
         try {
             const response = await axios.put(
-                `${import.meta.env.VITE_BACKEND_URL}/order/cancel/${orderId}`,
+                `${API_URL}/order/cancel/${orderId}`,
                 {},
-                { headers: { accessToken: `accessToken_${accessToken}` } }
+                { headers: getAuthHeaders() }
             );
-            console.log('Cancel Order Response:', response.data);
             setOrders((prev) =>
                 prev.map((o) => (o._id === orderId ? { ...o, orderStatus: 'cancelled' } : o))
             );
             toast.success('Order cancelled successfully!', { position: 'top-right', autoClose: 3000 });
         } catch (err) {
-            console.log('Cancel Order Error:', err.response?.status, err.response?.data);
+            console.error('Cancel Order Error:', err.message);
             setError(err.response?.data?.message || 'Failed to cancel order: ' + err.message);
-            toast.error(err.response?.data?.message || 'Failed to cancel order: ' + err.message, { position: 'top-right', autoClose: 3000 });
+            toast.error(err.response?.data?.message || 'Failed to cancel order');
         } finally {
             setActionLoading((prev) => ({ ...prev, [orderId]: null }));
         }

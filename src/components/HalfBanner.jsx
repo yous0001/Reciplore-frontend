@@ -2,102 +2,57 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../store/authStore';
 
-export default function HalfBanner({ bannerName, header, paragraph ,classnames}) {
+const FALLBACK_HALF_BANNER = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80";
+
+export default function HalfBanner({ bannerName, header, paragraph, classnames = "" }) {
     const [banner, setBanner] = useState(null);
-    const [error, setError] = useState(null);
-    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchBanner = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/banner/${bannerName}`);
+                const response = await axios.get(`${API_URL}/banner/${bannerName}`, { timeout: 3000 });
                 if (response.data.success || response.data.sucess) {
                     setBanner(response.data.banners);
-                } else {
-                    setError(`Failed to load banner data: ${response.data.message || 'Invalid response'}`);
                 }
             } catch (err) {
-                setError(`Error fetching banner: ${err.message}`);
-                console.error('Axios Error:', err.response?.data, err.response?.status);
-            } finally {
-                setLoading(false);
+                console.warn(`Banner ${bannerName} unavailable, using fallback:`, err.message);
             }
         };
 
         fetchBanner();
     }, [bannerName]);
 
-    if (loading) {
-        return (
-            <motion.div
-                className="text-center text-black mt-10"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.4 }}
-            >
-                Loading...
-            </motion.div>
-        );
-    }
-
-    if (error) {
-        return (
-            <motion.div
-                className="text-center text-red-500 mt-10"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.4 }}
-            >
-                Error: {error}
-            </motion.div>
-        );
-    }
-
-    const backgroundImage = banner?.Images?.[0]?.secure_url || 'https://via.placeholder.com/1200x300';
+    const backgroundImage = banner?.Images?.[0]?.secure_url || FALLBACK_HALF_BANNER;
 
     return (
-        <div className={"bg-gradient-to-br flex items-center justify-center py-5 "+classnames}>
+        <div className={`flex-1 rounded-3xl overflow-hidden shadow-md relative min-h-[300px] flex items-center ${classnames}`}>
             <div
-                className="h-120 w-full bg-cover bg-center bg-no-repeat mx-auto rounded-2xl flex items-center justify-start"
+                className="w-full h-full min-h-[300px] bg-cover bg-center p-8 flex items-center rounded-3xl relative"
                 style={{
-                    backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
+                    backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.65)), url(${backgroundImage})`,
                 }}
             >
                 <motion.div
-                    className="w-full p-2 md:p-4 lg:p-8 m-4"
-                    initial={{ opacity: 0, y: 20 }}
+                    className="w-full space-y-4 text-white z-10"
+                    initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
+                    transition={{ duration: 0.5 }}
                 >
-                    <div className="flex flex-col justify-center items-start space-y-6 gap-y-6">
-                        <motion.h2
-                            className="text-2xl leading-tight font-bold"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6, delay: 0.2 }}
-                        >
-                            {header}
-                        </motion.h2>
-                        <motion.p
-                            className="text-sm leading-relaxed "
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6, delay: 0.4 }}
-                        >
-                            {paragraph}
-                        </motion.p>
-                        <motion.button
-                            onClick={() => navigate('/recipes')}
-                            className="px-5 py-2 bg-orange-500 text-white font-semibold rounded-lg shadow-md hover:bg-orange-600 transition-all duration-300 hover:-translate-y-1"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6, delay: 0.6 }}
-                        >
-                            View Recipes
-                        </motion.button>
-                    </div>
+                    <h2 className="text-2xl font-bold leading-snug">
+                        {header}
+                    </h2>
+                    <p className="text-sm text-gray-200 leading-relaxed max-w-md">
+                        {paragraph}
+                    </p>
+                    <button
+                        onClick={() => navigate('/recipes')}
+                        className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl shadow transition-all duration-200 hover:scale-105 cursor-pointer mt-2"
+                    >
+                        Explore Now
+                    </button>
                 </motion.div>
             </div>
         </div>

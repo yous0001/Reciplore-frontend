@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Cookies from 'js-cookie';
 import slugify from 'slugify';
 import { toast } from 'react-toastify';
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
+import { API_URL, getAuthHeaders } from '../store/authStore';
 
 const RecipeCard = ({ recipe }) => {
     const navigate = useNavigate();
@@ -23,8 +23,8 @@ const RecipeCard = ({ recipe }) => {
         setError(null);
         setLoading(true);
 
-        const accessToken = Cookies.get('accessToken');
-        if (!accessToken) {
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders.accessToken) {
             setError('Please log in to favorite recipes.');
             toast.error('Please log in to favorite recipes.', { position: 'top-right', autoClose: 3000 });
             setLoading(false);
@@ -33,20 +33,21 @@ const RecipeCard = ({ recipe }) => {
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/auth/toogle-favourite/${recipe._id}`,
+                `${API_URL}/auth/toggle-favourite/${recipe._id}`,
                 {},
                 {
-                    headers: { accessToken: `accessToken_${accessToken}` },
+                    headers: authHeaders,
                 }
             );
             console.log('Toggle Favourite Response:', response.data);
-            setIsFavourite(response.data.message.includes('added'));
+            const added = response.data?.message?.toLowerCase().includes('added');
+            setIsFavourite(added);
             toast.success(response.data.message, { position: 'top-right', autoClose: 3000 });
             setError(null);
         } catch (err) {
             console.error('Toggle Favourite Error:', err.response?.status, err.response?.data);
-            setError('Failed to toggle favorite: ' + err.message);
-            toast.error('Failed to toggle favorite: ' + err.message, { position: 'top-right', autoClose: 3000 });
+            setError('Failed to toggle favorite: ' + (err.response?.data?.message || err.message));
+            toast.error('Failed to toggle favorite: ' + (err.response?.data?.message || err.message), { position: 'top-right', autoClose: 3000 });
         } finally {
             setLoading(false);
         }

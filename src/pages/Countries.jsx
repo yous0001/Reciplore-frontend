@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { useAuthStore } from '../store/authStore'; // Adjust path
-import RecipeCard from '../components/RecipeCard'; // Adjust path
-import Cookies from 'js-cookie';
+import RecipeCard from '../components/RecipeCard';
 import { debounce } from 'lodash';
-import { FaGlobe } from 'react-icons/fa'; // Default icon
+import { FaGlobe } from 'react-icons/fa';
+import { API_URL, getAuthHeaders } from '../store/authStore';
 
 const Countries = () => {
     const [countries, setCountries] = useState([]);
@@ -27,25 +26,23 @@ const Countries = () => {
 
     // Debounced fetch for search and filters
     const debouncedFetchRecipes = useCallback(
-        debounce((params, accessToken) => {
-            fetchRecipes(params, accessToken);
-        }, 500),
+        debounce((params) => {
+            fetchRecipes(params);
+        }, 400),
         []
     );
 
     // Fetch countries
-    const fetchCountries = async (accessToken) => {
+    const fetchCountries = async () => {
         try {
-            const headers = (accessToken) ? { accessToken: `accessToken_${accessToken}` } : {}
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/country/`, {
-                headers,
+            const response = await axios.get(`${API_URL}/country/`, {
+                headers: getAuthHeaders(),
+                timeout: 5000,
             });
-            console.log('Countries API Response:', response.data); // Debug
             const countriesData = response.data.countries || [];
-            console.log('Country Names:', countriesData.map((c) => c.name)); // Debug
             setCountries(countriesData);
         } catch (err) {
-            console.error('Countries API Error:', err.response?.status, err.response?.data);
+            console.error('Countries API Error:', err.message);
             setError('Failed to fetch countries: ' + err.message);
         } finally {
             setLoading(false);
@@ -53,25 +50,23 @@ const Countries = () => {
     };
 
     // Fetch recipes for a country
-    const fetchRecipes = async (params, accessToken) => {
+    const fetchRecipes = async (params) => {
         setLoading(true);
         setError(null);
 
         try {
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/recipe/list`, {
-                headers: (accessToken) ? { accessToken: `accessToken_${accessToken}` } : {},
+            const response = await axios.get(`${API_URL}/recipe/list`, {
+                headers: getAuthHeaders(),
                 params,
+                timeout: 8000,
             });
-            console.log('Recipes API Response:', response.data); // Debug
             const recipesData = response.data.recipes?.docs || [];
-            const totalItems = response.data.recipes?.total || 0;
-            const calculatedTotalPages = Math.max(1, Math.ceil(totalItems / params.limit));
+            const calculatedTotalPages = response.data.recipes?.totalPages || 1;
 
             setRecipes(recipesData);
             setTotalPages(calculatedTotalPages);
-            console.log('Page:', params.page, 'Total Pages:', calculatedTotalPages); // Debug
         } catch (err) {
-            console.error('Recipes API Error:', err.response?.status, err.response?.data);
+            console.error('Recipes API Error:', err.message);
             setError('Failed to fetch recipes: ' + err.message);
             setRecipes([]);
             setTotalPages(0);
