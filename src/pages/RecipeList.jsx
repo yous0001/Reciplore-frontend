@@ -3,6 +3,9 @@ import axios from 'axios';
 import { useAuthStore, API_URL, getAuthHeaders } from '../store/authStore';
 import RecipeCard from '../components/RecipeCard';
 import { RecipeCardSkeleton } from '../components/LoadingSpinner';
+import PageHeader from '../components/ui/PageHeader';
+import Pagination from '../components/ui/Pagination';
+import { ErrorState, EmptyState } from '../components/ui/StatusState';
 import { debounce } from 'lodash';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -244,69 +247,10 @@ const RecipeList = () => {
         setShowFilters(false);
     };
 
-    // Generate pagination numbers with ellipsis
-    const getPaginationItems = () => {
-        const maxVisiblePages = 5;
-        const items = [];
-
-        if (totalPages <= 1) return items;
-
-        let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
-        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-        if (endPage - startPage + 1 < maxVisiblePages) {
-            startPage = Math.max(1, endPage - maxVisiblePages + 1);
-        }
-
-        // Always show first page
-        if (startPage > 1) {
-            items.push({ type: 'page', number: 1, label: '1' });
-        }
-
-        // Add ellipsis if needed
-        if (startPage > 2) {
-            items.push({ type: 'ellipsis', label: '...' });
-        }
-
-        // Add page numbers
-        for (let i = startPage; i <= endPage; i++) {
-            items.push({ type: 'page', number: i, label: i.toString() });
-        }
-
-        // Add ellipsis if needed
-        if (endPage < totalPages - 1) {
-            items.push({ type: 'ellipsis', label: '...' });
-        }
-
-        // Always show last page if different from current end
-        if (endPage < totalPages) {
-            items.push({ type: 'page', number: totalPages, label: totalPages.toString() });
-        }
-
-        return items;
-    };
-
-    // Add a loading skeleton for better UX
     const renderSkeleton = () => (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 12 }).map((_, index) => (
-                <motion.div
-                    key={index}
-                    className="bg-white rounded-xl shadow-md overflow-hidden"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                >
-                    <div className="h-48 bg-gradient-to-r from-gray-200 to-gray-300 animate-pulse"></div>
-                    <div className="p-4">
-                        <div className="h-6 bg-gray-300 rounded mb-2"></div>
-                        <div className="h-4 bg-gray-300 rounded w-3/4 mb-4"></div>
-                        <div className="flex justify-between">
-                            <div className="h-4 bg-gray-300 rounded w-1/4"></div>
-                            <div className="h-4 bg-gray-300 rounded w-1/4"></div>
-                        </div>
-                    </div>
-                </motion.div>
+                <RecipeCardSkeleton key={index} />
             ))}
         </div>
     );
@@ -333,8 +277,12 @@ const RecipeList = () => {
 
     return (
         <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            {/* Main Content Area */}
-            <div className="flex-1 pt-16 p-4 lg:p-6">
+            <div className="flex-1 max-w-7xl w-full mx-auto pt-10 pb-16 px-4 sm:px-6 lg:px-8">
+                <PageHeader
+                    badge="Culinary Collection"
+                    title="Explore Recipes"
+                    subtitle="Browse hundreds of global dishes, filter by cuisine or rating, and save your favorites."
+                />
                 {/* Header with search and filter buttons */}
                 <motion.div
                     className="flex flex-col md:flex-row gap-4 mb-6"
@@ -427,91 +375,27 @@ const RecipeList = () => {
                 {loading ? (
                     renderSkeleton()
                 ) : error ? (
-                    <div className="text-center text-red-500 py-10">{error}</div>
+                    <ErrorState message={error} onRetry={handleFormSubmit} />
+                ) : recipes.length === 0 ? (
+                    <EmptyState
+                        title="No recipes found"
+                        description="Try clearing your filters or searching with different keywords."
+                        actionLabel="Clear Filters"
+                        onAction={clearFilters}
+                    />
                 ) : (
                     <>
-                        <motion.div
-                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.5 }}
-                        >
-                            {recipes.length > 0 ? (
-                                recipes.map((recipe, index) => (
-                                    <motion.div
-                                        key={recipe._id}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.05 }}
-                                    >
-                                        <RecipeCard recipe={recipe} />
-                                    </motion.div>
-                                ))
-                            ) : (
-                                <div className="col-span-full text-center text-gray-500 py-10">
-                                    No recipes found matching your criteria
-                                </div>
-                            )}
-                        </motion.div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {recipes.map((recipe) => (
+                                <RecipeCard key={recipe._id} recipe={recipe} />
+                            ))}
+                        </div>
 
-                        {/* Pagination */}
-                        {totalPages > 1 && (
-                            <motion.div
-                                className="flex justify-center items-center mt-8 space-x-2"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.3 }}
-                            >
-                                <button
-                                    onClick={() => handlePageChange(1)}
-                                    disabled={page === 1 || !hasPrevPage}
-                                    className="px-3 py-2 bg-white text-gray-700 rounded-lg disabled:opacity-50 hover:bg-orange-500 hover:text-white transition-colors shadow-sm"
-                                    aria-label="First page"
-                                >
-                                    First
-                                </button>
-                                <button
-                                    onClick={() => handlePageChange(page - 1)}
-                                    disabled={page <= 1 || !hasPrevPage}
-                                    className="px-3 py-2 bg-white text-gray-700 rounded-lg disabled:opacity-50 hover:bg-orange-500 hover:text-white transition-colors shadow-sm"
-                                    aria-label="Previous page"
-                                >
-                                    Prev
-                                </button>
-                                {getPaginationItems().map((item, index) => (
-                                    <button
-                                        key={`${item.type}-${item.label}-${index}`}
-                                        onClick={() => item.type === 'page' && handlePageChange(item.number)}
-                                        disabled={item.type === 'ellipsis' || page === item.number}
-                                        className={`px-3 py-2 rounded-lg transition-colors shadow-sm ${item.type === 'ellipsis'
-                                            ? 'bg-transparent text-gray-700 cursor-default'
-                                            : page === item.number
-                                                ? 'bg-orange-500 text-white'
-                                                : 'bg-white text-gray-700 hover:bg-orange-500 hover:text-white'
-                                            }`}
-                                        aria-label={item.type === 'page' ? `Page ${item.label}` : undefined}
-                                    >
-                                        {item.label}
-                                    </button>
-                                ))}
-                                <button
-                                    onClick={() => handlePageChange(page + 1)}
-                                    disabled={page >= totalPages || !hasNextPage}
-                                    className="px-3 py-2 bg-white text-gray-700 rounded-lg disabled:opacity-50 hover:bg-orange-500 hover:text-white transition-colors shadow-sm"
-                                    aria-label="Next page"
-                                >
-                                    Next
-                                </button>
-                                <button
-                                    onClick={() => handlePageChange(totalPages)}
-                                    disabled={page >= totalPages || !hasNextPage}
-                                    className="px-3 py-2 bg-white text-gray-700 rounded-lg disabled:opacity-50 hover:bg-orange-500 hover:text-white transition-colors shadow-sm"
-                                    aria-label="Last page"
-                                >
-                                    Last
-                                </button>
-                            </motion.div>
-                        )}
+                        <Pagination
+                            page={page}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                        />
                     </>
                 )}
 
