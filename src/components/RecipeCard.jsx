@@ -108,12 +108,20 @@ const RecipeCard = ({ recipe }) => {
         </div>
 
         <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-50 text-orange-700 capitalize truncate max-w-[50%]">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); navigate(`/recipes?category=${recipe.category?._id || ''}`); }}
+            className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-50 text-orange-700 capitalize truncate max-w-[50%] hover:bg-orange-100 transition-colors cursor-pointer"
+          >
             {recipe.category?.name?.replace(/_/g, ' ') || 'Recipe'}
-          </span>
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 truncate max-w-[45%]">
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); navigate(`/recipes?country=${recipe.country?._id || ''}`); }}
+            className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 truncate max-w-[45%] hover:bg-gray-200 transition-colors cursor-pointer"
+          >
             {recipe.country?.name || 'Global'}
-          </span>
+          </button>
         </div>
       </div>
     </article>

@@ -23,13 +23,21 @@ const INITIAL_FILTERS = {
 };
 
 const RecipeList = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ── Initialize filters from URL params on first render (avoids race condition) ──
+  const [filters, setFilters] = useState(() => ({
+    ...INITIAL_FILTERS,
+    category: searchParams.get('category') || '',
+    country:  searchParams.get('country')  || '',
+  }));
+
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeCategory, setActiveCategory] = useState('Latest Recipes');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [page, setPage] = useState(1);
   const [limit] = useState(12);
   const [totalPages, setTotalPages] = useState(0);
@@ -37,26 +45,24 @@ const RecipeList = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [categories, setCategories] = useState([]);
   const [countries, setCountries] = useState([]);
-  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Debounce search term cleanly without lodash
+  // Strip filter params from URL after reading them (keep URL clean)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm.trim());
-    }, 350);
+    const hasCategory = searchParams.get('category');
+    const hasCountry  = searchParams.get('country');
+    if (hasCategory || hasCountry) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('category');
+      next.delete('country');
+      setSearchParams(next, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 350);
     return () => clearTimeout(timer);
   }, [searchTerm]);
-
-  // Read category query param once
-  useEffect(() => {
-    const categoryParam = searchParams.get('category');
-    if (categoryParam) {
-      setFilters((prev) => ({ ...prev, category: categoryParam }));
-      const nextParams = new URLSearchParams(searchParams);
-      nextParams.delete('category');
-      setSearchParams(nextParams, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
 
   // Fetch filter dropdown data once
   useEffect(() => {
