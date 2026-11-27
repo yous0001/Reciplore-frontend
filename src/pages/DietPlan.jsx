@@ -1,272 +1,277 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import Cookies from 'js-cookie';
+import {
+  Ruler, Weight, Calendar, Percent, Target, Utensils,
+  User, Activity, Loader2, CheckCircle2, AlertCircle, Mail, Sparkles,
+} from 'lucide-react';
 import { useAuthStore, API_URL, getAuthHeaders } from '../store/authStore';
-import { FaRuler, FaWeight, FaBirthdayCake, FaPercentage, FaBullseye, FaUtensils, FaMars, FaVenus, FaRunning } from 'react-icons/fa';
 
+// ── Form Field Components ─────────────────────────────────────────────────
+const NumberField = ({ icon: Icon, label, hint, value, onChange, min, max, step = 1, unit }) => (
+  <div>
+    <label className="block text-sm font-semibold text-stone-700 mb-1.5">{label}</label>
+    <div className="relative">
+      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-orange-400 pointer-events-none">
+        <Icon className="w-4 h-4" />
+      </div>
+      <input
+        type="number"
+        value={value}
+        min={min}
+        max={max}
+        step={step}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full pl-10 pr-12 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-stone-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition"
+      />
+      {unit && (
+        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-stone-400 font-medium pointer-events-none">
+          {unit}
+        </span>
+      )}
+    </div>
+    {hint && <p className="text-xs text-stone-400 mt-1">{hint}</p>}
+  </div>
+);
+
+const SelectField = ({ icon: Icon, label, value, onChange, options }) => (
+  <div>
+    <label className="block text-sm font-semibold text-stone-700 mb-1.5">{label}</label>
+    <div className="relative">
+      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-orange-400 pointer-events-none">
+        <Icon className="w-4 h-4" />
+      </div>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-stone-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent appearance-none transition cursor-pointer"
+      >
+        {options.map(({ value: v, label: l }) => (
+          <option key={v} value={v}>{l}</option>
+        ))}
+      </select>
+      <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+      </div>
+    </div>
+  </div>
+);
+
+const ChipGroup = ({ label, options, value, onChange }) => (
+  <div>
+    <label className="block text-sm font-semibold text-stone-700 mb-2">{label}</label>
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          onClick={() => onChange(opt.value)}
+          className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+            value === opt.value
+              ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-orange-500 shadow-sm'
+              : 'bg-white text-stone-600 border-stone-200 hover:border-orange-300 hover:text-orange-600'
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+// ── Main Component ────────────────────────────────────────────────────────
 const DietPlan = () => {
-    const [height, setHeight] = useState(175);
-    const [weight, setWeight] = useState(80);
-    const [age, setAge] = useState(25);
-    const [fatPercentage, setFatPercentage] = useState(15);
-    const [goal, setGoal] = useState('muscle gain');
-    const [preferences, setPreferences] = useState('high protein');
-    const [gender, setGender] = useState('male');
-    const [activityLevel, setActivityLevel] = useState('Moderately Active');
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('');
-    const { isAuthenticated } = useAuthStore();
+  const [height,        setHeight]        = useState(175);
+  const [weight,        setWeight]        = useState(80);
+  const [age,           setAge]           = useState(25);
+  const [fatPercentage, setFatPercentage] = useState(15);
+  const [goal,          setGoal]          = useState('muscle gain');
+  const [preferences,   setPreferences]   = useState('high protein');
+  const [gender,        setGender]        = useState('male');
+  const [activityLevel, setActivityLevel] = useState('Moderately Active');
+  const [loading,       setLoading]       = useState(false);
+  const [status,        setStatus]        = useState(null); // { type: 'success'|'error', msg }
+  const { isAuthenticated } = useAuthStore();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setMessage('');
-        setLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus(null);
 
-        // Validation
-        if (fatPercentage < 5 || fatPercentage > 50) {
-            setMessage('Fat percentage must be between 5% and 50%.');
-            setLoading(false);
-            return;
-        }
-        if (age < 19 || age > 99) {
-            setMessage('Age must be between 19 and 99.');
-            setLoading(false);
-            return;
-        }
-        if (!['weight loss', 'muscle gain', 'maintenance'].includes(goal.toLowerCase())) {
-            setMessage('Goal must be "weight loss", "muscle gain", or "maintenance".');
-            setLoading(false);
-            return;
-        }
-        if (!['male', 'female'].includes(gender.toLowerCase())) {
-            setMessage('Gender must be "male" or "female".');
-            setLoading(false);
-            return;
-        }
+    // Validation
+    if (fatPercentage < 5 || fatPercentage > 50) {
+      setStatus({ type: 'error', msg: 'Body fat % must be between 5 and 50.' });
+      return;
+    }
+    if (age < 19 || age > 99) {
+      setStatus({ type: 'error', msg: 'Age must be between 19 and 99.' });
+      return;
+    }
 
-        const authHeaders = getAuthHeaders();
-        if (!authHeaders.accessToken) {
-            setMessage('Please log in first to generate a personalized diet plan.');
-            setLoading(false);
-            return;
-        }
+    const authHeaders = getAuthHeaders();
+    if (!authHeaders.accessToken) {
+      setStatus({ type: 'error', msg: 'Please log in to generate a personalized diet plan.' });
+      return;
+    }
 
-        const data = {
-            height: +height,
-            age: +age,
-            weight: +weight,
-            fatPercentage: +fatPercentage,
-            goal: goal.toLowerCase(),
-            preferences,
-            gender: gender.toLowerCase(),
-            activityLevel,
-        };
+    setLoading(true);
+    try {
+      await axios.post(
+        `${API_URL}/ai/diet-plan`,
+        { height: +height, age: +age, weight: +weight, fatPercentage: +fatPercentage,
+          goal, preferences, gender, activityLevel },
+        { headers: authHeaders }
+      );
+      setStatus({ type: 'success', msg: 'Your diet plan is being generated and will arrive in your email shortly.' });
+    } catch (err) {
+      setStatus({ type: 'error', msg: err.response?.data?.message || err.message || 'Failed to generate diet plan.' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        try {
-            await axios.post(`${API_URL}/ai/diet-plan`, data, {
-                headers: authHeaders,
-            });
-            setMessage('Your diet plan is being generated and will be sent to your email shortly.');
-        } catch (err) {
-            console.error('Diet Plan API Error:', err.response?.status, err.response?.data);
-            setMessage('Failed to generate diet plan: ' + (err.response?.data?.message || err.message));
-        } finally {
-            setLoading(false);
-        }
-    };
+  return (
+    <div className="min-h-screen bg-[#FAF9F6] pb-20">
 
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-100 to-white p-4">
-            <div className="w-full max-w-2xl bg-white shadow-xl rounded-xl p-6">
-                <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-700 text-center mb-6">
-                    Generate Your Diet Plan
-                </h1>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <style>
-                        {`
-                            @keyframes inputFocus {
-                                from {
-                                    transform: scale(1);
-                                    border-color: #000000;
-                                }
-                                to {
-                                    transform: scale(1.05);
-                                    border-color: linear-gradient(to right, #f97316, #ea580c);
-                                }
-                            }
-                            .input-focus {
-                                transition: transform 0.3s ease, border-color 0.3s ease;
-                            }
-                            .input-focus:focus {
-                                animation: inputFocus 0.3s forwards;
-                            }
-                            .input-container {
-                                position: relative;
-                            }
-                            .input-icon {
-                                position: absolute;
-                                top: 50%;
-                                left: 10px;
-                                transform: translateY(-50%);
-                                color: #FFA726;
-                            }
-                            .input-with-icon {
-                                padding-left: 36px;
-                            }
-                        `}
-                    </style>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-black mb-1">
-                                Height (cm)
-                                <div className="input-container">
-                                    <FaRuler className="input-icon " />
-                                    <input
-                                        type="number"
-                                        value={height}
-                                        onChange={(e) => setHeight(e.target.value)}
-                                        className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none input-with-icon"
-                                        min="100"
-                                        max="250"
-                                    />
-                                </div>
-                            </label>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-black mb-1">
-                                Weight (kg)
-                                <div className="input-container">
-                                    <FaWeight className="input-icon" />
-                                    <input
-                                        type="number"
-                                        value={weight}
-                                        onChange={(e) => setWeight(e.target.value)}
-                                        className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none input-with-icon"
-                                        min="30"
-                                        max="200"
-                                    />
-                                </div>
-                            </label>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-black mb-1">
-                                Age
-                                <div className="input-container">
-                                    <FaBirthdayCake className="input-icon" />
-                                    <input
-                                        type="number"
-                                        value={age}
-                                        onChange={(e) => setAge(e.target.value)}
-                                        className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none input-with-icon"
-                                        min="19"
-                                        max="99"
-                                    />
-                                </div>
-                            </label>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-black mb-1">
-                                Fat Percentage (%)
-                                <div className="input-container">
-                                    <FaPercentage className="input-icon" />
-                                    <input
-                                        type="number"
-                                        value={fatPercentage}
-                                        onChange={(e) => setFatPercentage(e.target.value)}
-                                        className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none input-with-icon"
-                                        min="5"
-                                        max="50"
-                                    />
-                                </div>
-                            </label>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-black mb-1">
-                                Goal
-                                <div className="input-container">
-                                    <FaBullseye className="input-icon" />
-                                    <select
-                                        value={goal}
-                                        onChange={(e) => setGoal(e.target.value)}
-                                        className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none input-with-icon"
-                                    >
-                                        <option value="muscle gain">Muscle Gain</option>
-                                        <option value="weight loss">Weight Loss</option>
-                                        <option value="maintenance">Maintenance</option>
-                                    </select>
-                                </div>
-                            </label>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-black mb-1">
-                                Preferences
-                                <div className="input-container">
-                                    <FaUtensils className="input-icon" />
-                                    <select
-                                        value={preferences}
-                                        onChange={(e) => setPreferences(e.target.value)}
-                                        className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none input-with-icon"
-                                    >
-                                        <option value="high protein">High Protein</option>
-                                        <option value="low carb">Low Carb</option>
-                                        <option value="vegetarian">Vegetarian</option>
-                                        <option value="vegan">Vegan</option>
-                                    </select>
-                                </div>
-                            </label>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-black mb-1">
-                                Gender
-                                <div className="input-container">
-                                    {gender.toLowerCase() === 'male' ? <FaMars className="input-icon" /> : <FaVenus className="input-icon" />}
-                                    <select
-                                        value={gender}
-                                        onChange={(e) => setGender(e.target.value)}
-                                        className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none input-with-icon"
-                                    >
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
-                                    </select>
-                                </div>
-                            </label>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-black mb-1">
-                                Activity Level
-                                <div className="input-container">
-                                    <FaRunning className="input-icon" />
-                                    <select
-                                        value={activityLevel}
-                                        onChange={(e) => setActivityLevel(e.target.value)}
-                                        className="mt-1 block w-full p-2 border border-black rounded-lg input-focus focus:outline-none input-with-icon"
-                                    >
-                                        <option value="Sedentary">Sedentary</option>
-                                        <option value="Lightly Active">Lightly Active</option>
-                                        <option value="Moderately Active">Moderately Active</option>
-                                        <option value="Very Active">Very Active</option>
-                                        <option value="Extremely Active">Extremely Active</option>
-                                    </select>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-2 px-4 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
-                    >
-                        {loading ? 'Generating...' : 'Generate Diet Plan'}
-                    </button>
-                    {message && (
-                        <p className={`text-center ${message.includes('Failed') ? 'text-red-500' : 'text-green-500'}`}>
-                            {message}
-                        </p>
-                    )}
-                </form>
-            </div>
+      {/* ── Hero ── */}
+      <div className="bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-14 text-center">
+          <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-full px-4 py-1.5 text-sm font-medium mb-5">
+            <Sparkles className="w-4 h-4" />
+            Personalized Nutrition AI
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-extrabold font-display tracking-tight mb-3 drop-shadow">
+            Your Diet Plan
+          </h1>
+          <p className="text-teal-100 text-lg max-w-xl mx-auto leading-relaxed">
+            Share your stats and goals — we'll craft a tailored meal plan and send it straight to your inbox.
+          </p>
         </div>
-    );
+      </div>
+
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 -mt-6">
+
+        {/* ── Form Card ── */}
+        <div className="bg-white rounded-3xl shadow-xl border border-stone-100 overflow-hidden">
+          <div className="p-6 sm:p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+
+              {/* Body stats */}
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-4">Body Stats</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <NumberField icon={Ruler}   label="Height" value={height} onChange={setHeight} min={120} max={250} unit="cm" />
+                  <NumberField icon={Weight}  label="Weight" value={weight} onChange={setWeight} min={30}  max={300} unit="kg" />
+                  <NumberField icon={Calendar} label="Age"   value={age}    onChange={setAge}    min={19}  max={99}  unit="yrs" hint="19–99 years" />
+                  <NumberField icon={Percent} label="Body Fat %" value={fatPercentage} onChange={setFatPercentage} min={5} max={50} step={0.5} unit="%" hint="5–50%" />
+                </div>
+              </div>
+
+              <hr className="border-stone-100" />
+
+              {/* Gender */}
+              <ChipGroup
+                label="Gender"
+                value={gender}
+                onChange={setGender}
+                options={[
+                  { value: 'male',   label: '♂ Male'   },
+                  { value: 'female', label: '♀ Female' },
+                ]}
+              />
+
+              {/* Goal */}
+              <ChipGroup
+                label="Your Goal"
+                value={goal}
+                onChange={setGoal}
+                options={[
+                  { value: 'muscle gain',  label: '💪 Muscle Gain'  },
+                  { value: 'weight loss',  label: '🔥 Weight Loss'  },
+                  { value: 'maintenance',  label: '⚖️ Maintenance'   },
+                ]}
+              />
+
+              <hr className="border-stone-100" />
+
+              {/* Activity level */}
+              <SelectField
+                icon={Activity}
+                label="Activity Level"
+                value={activityLevel}
+                onChange={setActivityLevel}
+                options={[
+                  { value: 'Sedentary',          label: 'Sedentary — little or no exercise' },
+                  { value: 'Lightly Active',     label: 'Lightly Active — 1–3 days/week'   },
+                  { value: 'Moderately Active',  label: 'Moderately Active — 3–5 days/week'},
+                  { value: 'Very Active',        label: 'Very Active — 6–7 days/week'       },
+                  { value: 'Extremely Active',   label: 'Extremely Active — athlete'        },
+                ]}
+              />
+
+              {/* Preferences */}
+              <SelectField
+                icon={Utensils}
+                label="Diet Preference"
+                value={preferences}
+                onChange={setPreferences}
+                options={[
+                  { value: 'high protein', label: 'High Protein'  },
+                  { value: 'low carb',     label: 'Low Carb'      },
+                  { value: 'vegetarian',   label: 'Vegetarian'    },
+                  { value: 'vegan',        label: 'Vegan'         },
+                ]}
+              />
+
+              {/* Auth notice */}
+              {!isAuthenticated && (
+                <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm">
+                  <User className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>You need to be logged in to generate a diet plan.</span>
+                </div>
+              )}
+
+              {/* Status message */}
+              {status && (
+                <div className={`flex items-start gap-2.5 p-3.5 rounded-xl border text-sm ${
+                  status.type === 'success'
+                    ? 'bg-green-50 border-green-200 text-green-700'
+                    : 'bg-red-50 border-red-100 text-red-700'
+                }`}>
+                  {status.type === 'success'
+                    ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                    : <AlertCircle  className="w-4 h-4 shrink-0 mt-0.5" />}
+                  <span>{status.msg}</span>
+                </div>
+              )}
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Building your plan…
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-4 h-4" />
+                    Generate & Send to Email
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Info note */}
+        <p className="text-center text-xs text-stone-400 mt-6 leading-relaxed max-w-sm mx-auto">
+          Your plan will be generated by AI and emailed to your registered address. Generation usually takes 1–2 minutes.
+        </p>
+      </div>
+    </div>
+  );
 };
 
 export default DietPlan;
