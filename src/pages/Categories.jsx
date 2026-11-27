@@ -3,11 +3,19 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { API_URL, getAuthHeaders } from '../store/authStore';
-import PageHeader from '../components/ui/PageHeader';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=300&q=80';
 
+// ── Skeleton card ──────────────────────────────────────────────────────────
+const SkeletonCard = () => (
+  <div className="animate-pulse flex flex-col items-center gap-3 p-4 bg-white rounded-2xl border border-stone-100">
+    <div className="w-20 h-20 rounded-xl bg-stone-200" />
+    <div className="w-16 h-3 bg-stone-200 rounded" />
+  </div>
+);
+
+// ── Component ──────────────────────────────────────────────────────────────
 const Categories = () => {
   const [categories, setCategories] = useState([]);
   const [filtered, setFiltered]     = useState([]);
@@ -34,22 +42,47 @@ const Categories = () => {
     );
   }, [search, categories]);
 
-  const handleClick = (cat) => {
-    navigate(`/recipes?category=${cat._id}`);
-  };
+  // ── Full-page loading skeleton (hides all text until data arrives) ──
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FAF9F6] pb-16">
+        {/* Header skeleton */}
+        <div className="bg-white border-b border-stone-100 shadow-xs">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-pulse">
+            <div className="w-20 h-5 bg-stone-200 rounded-full mb-4" />
+            <div className="w-56 h-9 bg-stone-200 rounded-xl mb-3" />
+            <div className="w-72 h-4 bg-stone-100 rounded" />
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+          <div className="w-48 h-10 bg-stone-200 rounded-xl mb-10 animate-pulse" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+            {Array.from({ length: 18 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FAF9F6] pb-16">
-      <PageHeader
-        badge="Browse"
-        title="All Categories"
-        subtitle="Pick a category to explore its recipes"
-        backTo="/"
-        backLabel="Home"
-      />
+      {/* Page header — only shown when data is ready */}
+      <div className="bg-white border-b border-stone-100 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <span className="inline-block px-3.5 py-1 bg-orange-100 text-orange-700 text-xs font-bold uppercase tracking-wider rounded-full mb-3">
+            Browse
+          </span>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-stone-900 tracking-tight">
+            All Categories
+          </h1>
+          <p className="mt-2 text-stone-500 text-base md:text-lg max-w-2xl">
+            Pick a category to explore its recipes
+          </p>
+        </div>
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        {/* Search bar */}
+        {/* Search */}
         <div className="relative max-w-sm mb-10">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
           <input
@@ -62,16 +95,7 @@ const Categories = () => {
         </div>
 
         {/* Grid */}
-        {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="animate-pulse flex flex-col items-center gap-3">
-                <div className="w-24 h-24 rounded-2xl bg-stone-200" />
-                <div className="w-16 h-3 bg-stone-200 rounded" />
-              </div>
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
+        {filtered.length === 0 ? (
           <p className="text-center text-stone-400 py-20 text-base">
             No categories found{search ? ` for "${search}"` : ''}.
           </p>
@@ -81,8 +105,8 @@ const Categories = () => {
               <button
                 key={cat._id}
                 type="button"
-                onClick={() => handleClick(cat)}
-                className="group flex flex-col items-center gap-3 p-4 bg-white rounded-2xl border border-stone-200/70 shadow-xs hover:shadow-md hover:border-orange-300 transition-all cursor-pointer"
+                onClick={() => navigate(`/recipes?category=${cat._id}`)}
+                className="group flex flex-col items-center gap-3 p-4 bg-white rounded-2xl border border-stone-200/70 shadow-xs hover:shadow-md hover:border-orange-300 transition-all duration-200 cursor-pointer"
               >
                 <div className="w-20 h-20 rounded-xl overflow-hidden bg-stone-100 shrink-0">
                   <img
